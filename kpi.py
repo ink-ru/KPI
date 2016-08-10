@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import re, urllib, operator, json, collections
+import sys, re, urllib, json, collections
+import urllib.parse
+import urllib.request
+import operator # http://stackoverflow.com/questions/19411101/pyside-qtableview-example
+from PyQt4.QtCore import QSettings
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-import pcal
-import kpi_dicts
+from pcal import *
+from kpi_dicts import *
 
 # import signal # TODO add time limit
 
@@ -15,18 +19,24 @@ socket.setdefaulttimeout(10)
 
 class AppSettings():
 	def __init__(self, parent=None):
-		super(GetKPI, self).__init__(parent)
-		self.authstring = settings.value('authstring')
+		super(AppSettings, self).__init__()
+		self.settings = QSettings()
+		self.authstring = self.settings.value('authstring')
 
 	def getParametr(self, name):
-		if self.name != None:
-			return self.name
-		value = settings.value(name)
-		return value
+		if hasattr(self, name):
+			attr = getattr(self, name)
+			if attr != None:
+				return attr
+		attr = self.settings.value(name)
+		if attr != None:
+			return attr
+		else:
+			return False
 
 	def setParametr(self, name, value):
-		self.name = value
-		settings.setValue(name, value)
+		setattr(self, name, value)
+		self.settings.setValue(name, value)
 		return True
 
 class GetKPI():
@@ -34,13 +44,21 @@ class GetKPI():
 		super(GetKPI, self).__init__(parent)
 		# add init code here
 
-	def get_auth_url(self, url, username, password):		
+	def get_auth_url(url, username, password):		
 		data = urllib.parse.urlencode({'ldap-mail': username, 'ldap-pass': password, 'go': ' Войти '})
 		data = data.encode('ascii') # data should be bytes
 		request = urllib.request.Request(url, data)
 		resorce = urllib.request.urlopen(request)
 		html = resorce.read().decode("utf-8").strip()
 		return html
+
+	def auth_probe(username, password):
+		# content = GetKPI.get_auth_url(domain_url+smoke_uri, username, password)
+		content = GetKPI.get_auth_url(domain_url + api_uri + api_result_get, username, password)
+
+		if content.find("Авторизация LDAP") > 0:
+			return False
+		return True
 
 class MyWindow(QWidget):
 	def __init__(self, data_list, header, *args):
@@ -67,20 +85,25 @@ class MyTableModel(QAbstractTableModel):
 		QAbstractTableModel.__init__(self, parent, *args)
 		self.mylist = mylist
 		self.header = header
+
 	def rowCount(self, parent):
 		return len(self.mylist)
+
 	def columnCount(self, parent):
 		return len(self.mylist[0])
+
 	def data(self, index, role):
 		if not index.isValid():
 			return None
 		elif role != Qt.DisplayRole:
 			return None
 		return self.mylist[index.row()][index.column()]
+
 	def headerData(self, col, orientation, role):
 		if orientation == Qt.Horizontal and role == Qt.DisplayRole:
 			return self.header[col]
 		return None
+
 	def sort(self, col, order):
 		"""sort table by given column number col"""
 		self.emit(SIGNAL("layoutAboutToBeChanged()"))
@@ -90,18 +113,98 @@ class MyTableModel(QAbstractTableModel):
 			self.mylist.reverse()
 		self.emit(SIGNAL("layoutChanged()"))
 
-header = ['Solvent Name', ' BP (deg C)', ' MP (deg C)', ' Density (g/ml)']
+class Login(QDialog):
+	def __init__(self, parent=None):
+		super(Login, self).__init__(parent)
+		self.textName = QLineEdit(self)
+		self.textPass = QLineEdit(self)
+		self.buttonLogin = QPushButton('Login', self)
+		self.buttonLogin.clicked.connect(self.handleLogin)
+		layout = QVBoxLayout(self)
+		layout.addWidget(self.textName)
+		layout.addWidget(self.textPass)
+		layout.addWidget(self.buttonLogin)
 
-data_list = [
-	('ACETIC ACID', 117.9, 16.7, 1.049),
-	('ACETIC ANHYDRIDE', 140.1, -73.1, 1.087),
-	('ACETONE', 56.3, -94.7, 0.791),
-	('ACETONITRILE', 81.6, -43.8, 0.786),
-	('XYLENES', 139.1, -47.8, 0.86)
-	]
+	def handleLogin(self):
+		sett = AppSettings()
+		sett.setParametr("username", self.textName.text())
+		sett.setParametr("password", self.textPass.text())
 
-app = QApplication([])
-win = MyWindow(data_list, header)
-win.resize(1024, 768)
-win.show()
-app.exec_()
+		if GetKPI.auth_probe(self.textName.text(), self.textPass.text()) != False:
+			self.accept()
+		else:
+			QMessageBox.warning(
+				self, 'Error', 'Неверный логин или пароль!')
+
+if __name__=="__main__":
+
+	app = QApplication([]) # app = QApplication(sys.argv)
+	sett = AppSettings()
+	auth = False
+
+	username = sett.getParametr("username")
+	password = sett.getParametr("password")
+
+
+	# if GetKPI.auth_probe(username, password) == False:
+	# 	print("Требуется авторизация")
+	# 	login = Login()
+	# 	if login.exec_() == QDialog.Accepted:
+	# 		auth = True
+	# else:
+	# 	auth = True
+	
+	auth = True
+
+	if auth == True:
+		header = ['Сотрудник', 
+		"баллы грязные",
+		"просроченно задач",
+		"VIP",
+		"баллы чистые",
+		"всего задач",
+		"процент в срок",
+		"задач в срок",
+		"штраф за провис",
+		"подразделение - баллы грязные",
+		"подразделение - просроченно задач",
+		"подразделение - VIP",
+		"подразделение - баллы чистые",
+		"подразделение - всего задач",
+		"подразделение - процент в срок",
+		"подразделение - в срок",
+		"подразделение - штраф за провис"
+		]
+
+		full_url = domain_url + api_uri + api_result_get
+		rjson = GetKPI.get_auth_url(full_url, username, password)
+		cdict = json.loads(rjson)
+
+		full_url = domain_url + api_uri + api_employees_get
+		rjson = GetKPI.get_auth_url(full_url, username, password)
+		udict = json.loads(rjson)
+
+		data_list = []
+
+		for record in cdict:
+			user_data = ()
+
+			emp_name = str(udict[record]['name'])
+			grade = str(udict[record]['grade_name'])
+
+			user_data += (emp_name + " (" + grade + ")",)
+
+			od = collections.OrderedDict(sorted(cdict[record].items(), reverse=True))
+			for r_feild in od:
+				indicator_name = str(result_rus_dict[r_feild])
+				indicator = float(cdict[record][r_feild])
+				user_data += (str(indicator) + " (" + indicator_name + ")",)
+			data_list = data_list + [user_data,]
+		
+		win = MyWindow(data_list, header)
+		win.resize(1024, 768)
+		win.show()
+		app.exec_()
+	else:
+		app.quit
+		
