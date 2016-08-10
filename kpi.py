@@ -1,14 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import re, urllib, random, json, collections
-from PyQt4.QtCore import QSettings
-from PyQt4 import QtGui
-
-# import signal # TODO add time limit
+import re, urllib, operator, json, collections
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 
 import pcal
 import kpi_dicts
+
+# import signal # TODO add time limit
 
 import socket
 socket.setdefaulttimeout(10)
@@ -42,40 +42,66 @@ class GetKPI():
 		html = resorce.read().decode("utf-8").strip()
 		return html
 
-class KPITable(QtGui.QDialog):
+class MyWindow(QWidget):
+	def __init__(self, data_list, header, *args):
+		QWidget.__init__(self, *args)
+		# setGeometry(x_pos, y_pos, width, height)
+		self.setGeometry(300, 200, 570, 450)
+		self.setWindowTitle("Click on column title to sort")
+		table_model = MyTableModel(self, data_list, header)
+		table_view = QTableView()
+		table_view.setModel(table_model)
+		# set font
+		font = QFont("Courier New", 14)
+		table_view.setFont(font)
+		# set column width to fit contents (set font first!)
+		table_view.resizeColumnsToContents()
+		# enable sorting
+		table_view.setSortingEnabled(True)
+		layout = QVBoxLayout(self)
+		layout.addWidget(table_view)
+		self.setLayout(layout)
 
-	def __init__(self, parent=None):
-		super(KPITable, self).__init__(parent)
-		self.layout = QtGui.QGridLayout()
+class MyTableModel(QAbstractTableModel):
+	def __init__(self, parent, mylist, header, *args):
+		QAbstractTableModel.__init__(self, parent, *args)
+		self.mylist = mylist
+		self.header = header
+	def rowCount(self, parent):
+		return len(self.mylist)
+	def columnCount(self, parent):
+		return len(self.mylist[0])
+	def data(self, index, role):
+		if not index.isValid():
+			return None
+		elif role != Qt.DisplayRole:
+			return None
+		return self.mylist[index.row()][index.column()]
+	def headerData(self, col, orientation, role):
+		if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+			return self.header[col]
+		return None
+	def sort(self, col, order):
+		"""sort table by given column number col"""
+		self.emit(SIGNAL("layoutAboutToBeChanged()"))
+		self.mylist = sorted(self.mylist,
+			key=operator.itemgetter(col))
+		if order == Qt.DescendingOrder:
+			self.mylist.reverse()
+		self.emit(SIGNAL("layoutChanged()"))
 
-		# self.led = QtGui.QLineEdit("Sample")
-		# layout.addWidget(self.led, 0, 0)
+header = ['Solvent Name', ' BP (deg C)', ' MP (deg C)', ' Density (g/ml)']
 
-		self.table = QtGui.QTableWidget()
-		self.table.setRowCount(5)
-		self.table.setColumnCount(5)	
-		self.layout.addWidget(self.table, 1, 0)
+data_list = [
+	('ACETIC ACID', 117.9, 16.7, 1.049),
+	('ACETIC ANHYDRIDE', 140.1, -73.1, 1.087),
+	('ACETONE', 56.3, -94.7, 0.791),
+	('ACETONITRILE', 81.6, -43.8, 0.786),
+	('XYLENES', 139.1, -47.8, 0.86)
+	]
 
-	def retriveData(self):
-		self.table.setItem(1, 0, QtGui.QTableWidgetItem('text0'))
-
-		# insert row
-		rowPosition = self.table.rowCount()
-		self.table.insertRow(rowPosition)
-
-		self.table.setItem(rowPosition , 0, QtGui.QTableWidgetItem("text1"))
-		self.table.setItem(rowPosition , 1, QtGui.QTableWidgetItem("text2"))
-		self.table.setItem(rowPosition , 2, QtGui.QTableWidgetItem("text3"))
-
-	def render(self):
-		self.setLayout(self.layout)
-
-if __name__ == '__main__':
-	import sys
-	app = QtGui.QApplication(sys.argv)
-	t = KPITable()
-	t.resize(1024, 768)
-	t.retriveData()
-	t.render()
-	t.show()
-	sys.exit(app.exec_())
+app = QApplication([])
+win = MyWindow(data_list, header)
+win.resize(1024, 768)
+win.show()
+app.exec_()
