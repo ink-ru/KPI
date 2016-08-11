@@ -65,15 +65,20 @@ class MyWindow(QWidget):
 		QWidget.__init__(self, *args)
 		# setGeometry(x_pos, y_pos, width, height)
 		self.setGeometry(300, 200, 570, 450)
-		self.setWindowTitle("Click on column title to sort")
+		self.setWindowTitle("Demis KPI")
 		table_model = MyTableModel(self, data_list, header)
 		table_view = QTableView()
 		table_view.setModel(table_model)
 		# set font
 		font = QFont("Courier New", 14)
 		table_view.setFont(font)
+
 		# set column width to fit contents (set font first!)
 		table_view.resizeColumnsToContents()
+
+		# set selection mode
+		# table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+
 		# enable sorting
 		table_view.setSortingEnabled(True)
 		layout = QVBoxLayout(self)
@@ -198,7 +203,8 @@ if __name__=="__main__":
 			for r_feild in od:
 				indicator_name = str(result_rus_dict[r_feild])
 				indicator = float(cdict[record][r_feild])
-				user_data += (str(indicator) + " (" + indicator_name + ")",)
+				# user_data += (str(indicator) + " (" + indicator_name + ")",)
+				user_data += (indicator,)
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
