@@ -151,15 +151,13 @@ if __name__=="__main__":
 	password = sett.getParametr("password")
 
 
-	# if GetKPI.auth_probe(username, password) == False:
-	# 	print("Требуется авторизация")
-	# 	login = Login()
-	# 	if login.exec_() == QDialog.Accepted:
-	# 		auth = True
-	# else:
-	# 	auth = True
-	
-	auth = True
+	if GetKPI.auth_probe(username, password) == False:
+		print("Требуется авторизация")
+		login = Login()
+		if login.exec_() == QDialog.Accepted:
+			auth = True
+	else:
+		auth = True
 
 	if auth == True:
 		header = ['Сотрудник', 
