@@ -5,6 +5,8 @@ import sys, re, urllib, json, collections
 import urllib.parse
 import urllib.request
 import operator # http://stackoverflow.com/questions/19411101/pyside-qtableview-example
+import subprocess
+
 from PyQt4.QtCore import QSettings
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -66,6 +68,7 @@ class MyWindow(QWidget):
 		# setGeometry(x_pos, y_pos, width, height)
 		self.setGeometry(300, 200, 570, 450)
 		self.setWindowTitle("Demis KPI")
+		self.setWindowIcon(QIcon('app.png'))
 		table_model = MyTableModel(self, data_list, header)
 		table_view = QTableView()
 		table_view.setModel(table_model)
@@ -82,8 +85,34 @@ class MyWindow(QWidget):
 		# enable sorting
 		table_view.setSortingEnabled(True)
 		layout = QVBoxLayout(self)
-		layout.addWidget(table_view)
+		
+		
+		self.statusbar = QStatusBar()
+		self.statusbar.setObjectName("statusbar")
+
+		self.myQMenuBar = QMenuBar(self)
+		fileMenu = self.myQMenuBar.addMenu('File')
+
+		exitAction = QAction('Exit', self)
+		exitAction.setShortcut('esc')      
+		exitAction.triggered.connect(qApp.quit)
+		fileMenu.addAction(exitAction)
+
+		# fileMenu.addSeparator() # -----
+
+		restartAction = QAction('Reload', self)
+		restartAction.setShortcut('f5')       
+		restartAction.triggered.connect(self.action_reload)
+		fileMenu.addAction(restartAction)
+
 		self.setLayout(layout)
+		layout.addWidget(self.myQMenuBar)
+		layout.addWidget(table_view)
+		layout.addWidget(self.statusbar)
+
+	def action_reload(self):
+		subprocess.Popen([__file__])
+		sys.exit(0)
 
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
@@ -208,6 +237,7 @@ if __name__=="__main__":
 		win = MyWindow(data_list, header)
 		win.resize(1024, 768)
 		win.show()
+		win.statusbar.showMessage('Ready')
 		app.exec_()
 	else:
 		app.quit
