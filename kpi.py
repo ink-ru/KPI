@@ -73,7 +73,8 @@ class MyWindow(QWidget):
 		self.table_view = QTableView()
 		self.table_view.setModel(table_model)
 
-		# set font
+		# Установка шрифта
+		# self.setStyleSheet('font: 10pt "Courier New"')
 		font = QFont("Arial", 12)
 		self.table_view.setFont(font)
 
@@ -82,11 +83,31 @@ class MyWindow(QWidget):
 
 		# set selection mode
 		# self.table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+		
+		# пользователь не может изменять размер столбцов
+		# self.table_view.horizontalHeader().setResizeMode(QtGui.QHeaderView.Fixed)
+
+		# включаем растягивание последнего столбца
+		self.table_view.horizontalHeader().setStretchLastSection(False)
+
+		# отключаем показ границ виджета
+		self.table_view.setStyleSheet('''border: none;''')
+
+		# Сетка
+		# self.table_view.setShowGrid(False)
+
+		# Включаем чередующуюся подсветку строк
+		self.table_view.setAlternatingRowColors(True)
+
+		# скрываем заголовки строк
+		# self.table_view.verticalHeader().hide()
 
 		# enable sorting
 		self.table_view.setSortingEnabled(True)
+		self.table_view.sortByColumn(0, Qt.AscendingOrder)
 		layout = QVBoxLayout(self)
-		
+
+		self.table_view.hideColumn(0)
 		
 		self.statusbar = QStatusBar()
 		self.statusbar.setObjectName("statusbar")
@@ -111,10 +132,15 @@ class MyWindow(QWidget):
 		toggleVIPAction.setShortcut('alt+v')
 		toggleVIPAction.triggered.connect(self.toggle_vip)
 
+		toggleGroupAction = QAction(QIcon('./img/group.png'), 'Group', self)
+		toggleGroupAction.setShortcut('alt+g')
+		toggleGroupAction.triggered.connect(self.toggle_group)
+
 		self.toolbar = QToolBar(self)
 		self.toolbar.addAction(exitAction)
 		self.toolbar.addAction(restartAction)
 		self.toolbar.addAction(toggleVIPAction)
+		self.toolbar.addAction(toggleGroupAction)
 
 		self.setLayout(layout)
 		layout.addWidget(self.myQMenuBar)
@@ -122,14 +148,31 @@ class MyWindow(QWidget):
 		layout.addWidget(self.table_view)
 		layout.addWidget(self.statusbar)
 
+	def scrollTo(self, index, hint):
+		if index.column() > 1:
+			QtGui.QTableView.scrollTo(self, index, hint)
+	
 	def toggle_vip(self):
 		if self.table_view.isColumnHidden(3):
 			self.table_view.showColumn(3)
 			self.table_view.showColumn(11)
+			# self.table_view.selectColumn(3)
 		else:
 			self.table_view.hideColumn(3)
 			self.table_view.hideColumn(11)
 		self.statusbar.showMessage('изменение видимости VIP')
+
+	def toggle_group(self):
+		clist = [9,10,11,12,13,14,15,16]
+		if self.table_view.isColumnHidden(clist[0]):
+			for i in clist:
+				self.table_view.showColumn(i)
+				# print('hide' + str(i))
+		else:
+			for i in clist:
+				self.table_view.hideColumn(i)
+				# print('show' + str(i))
+		self.statusbar.showMessage('изменение видимости показателей групп')
 
 	def action_reload(self):
 		subprocess.Popen([__file__])
@@ -154,10 +197,16 @@ class MyTableModel(QAbstractTableModel):
 			return None
 		return self.mylist[index.row()][index.column()]
 
-	def headerData(self, col, orientation, role):
+	def headerData(self, section, orientation, role):
 		if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-			return self.header[col]
-		return None
+			return self.header[section]
+		elif orientation == Qt.Vertical:
+		# 	return ['Row %d' % int(row+1) for row in range(len(self.mylist))]
+			index = self.index(section, 0) # assuming ID is the first column
+			return self.data(index, role)
+		
+		return QAbstractTableModel.headerData(self, section, orientation, role)
+		# return None
 
 	def sort(self, col, order):
 		"""sort table by given column number col"""
@@ -256,6 +305,7 @@ if __name__=="__main__":
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
+		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
 		win.show()
 		win.statusbar.showMessage('Ready')
