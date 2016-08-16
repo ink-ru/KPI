@@ -70,20 +70,21 @@ class MyWindow(QWidget):
 		self.setWindowTitle("Demis KPI")
 		self.setWindowIcon(QIcon('app.png'))
 		table_model = MyTableModel(self, data_list, header)
-		table_view = QTableView()
-		table_view.setModel(table_model)
+		self.table_view = QTableView()
+		self.table_view.setModel(table_model)
+
 		# set font
-		font = QFont("Courier New", 14)
-		table_view.setFont(font)
+		font = QFont("Arial", 12)
+		self.table_view.setFont(font)
 
 		# set column width to fit contents (set font first!)
-		table_view.resizeColumnsToContents()
+		self.table_view.resizeColumnsToContents()
 
 		# set selection mode
-		# table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
+		# self.table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
 
 		# enable sorting
-		table_view.setSortingEnabled(True)
+		self.table_view.setSortingEnabled(True)
 		layout = QVBoxLayout(self)
 		
 		
@@ -93,22 +94,42 @@ class MyWindow(QWidget):
 		self.myQMenuBar = QMenuBar(self)
 		fileMenu = self.myQMenuBar.addMenu('File')
 
-		exitAction = QAction('Exit', self)
+		# exitAction = QAction('Exit', self)
+		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		fileMenu.addAction(exitAction)
 
 		# fileMenu.addSeparator() # -----
 
-		restartAction = QAction('Reload', self)
+		restartAction = QAction(QIcon('./img/reload.png'), 'Reload', self)
 		restartAction.setShortcut('f5')       
 		restartAction.triggered.connect(self.action_reload)
 		fileMenu.addAction(restartAction)
 
+		toggleVIPAction = QAction(QIcon('./img/vip.png'), 'VIP', self)
+		toggleVIPAction.setShortcut('alt+v')
+		toggleVIPAction.triggered.connect(self.toggle_vip)
+
+		self.toolbar = QToolBar(self)
+		self.toolbar.addAction(exitAction)
+		self.toolbar.addAction(restartAction)
+		self.toolbar.addAction(toggleVIPAction)
+
 		self.setLayout(layout)
 		layout.addWidget(self.myQMenuBar)
-		layout.addWidget(table_view)
+		layout.addWidget(self.toolbar)
+		layout.addWidget(self.table_view)
 		layout.addWidget(self.statusbar)
+
+	def toggle_vip(self):
+		if self.table_view.isColumnHidden(3):
+			self.table_view.showColumn(3)
+			self.table_view.showColumn(11)
+		else:
+			self.table_view.hideColumn(3)
+			self.table_view.hideColumn(11)
+		self.statusbar.showMessage('изменение видимости VIP')
 
 	def action_reload(self):
 		subprocess.Popen([__file__])
