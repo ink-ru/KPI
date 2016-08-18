@@ -288,9 +288,9 @@ if __name__=="__main__":
 					indicator_name = str(r_feild)
 					# raise ValueError('Undefined unit: {}'.format(e.args[0]))
 
-				if len(header) < len(od):
+				if len(header) <= len(od):
 					header = header + [indicator_name,]
-					print(indicator_name)
+					print(str(r_feild) + indicator_name)
 
 				indicator = float(cdict[record][r_feild])
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
