@@ -241,6 +241,17 @@ class Login(QDialog):
 			QMessageBox.warning(
 				self, 'Error', 'Неверный логин или пароль!')
 
+class SystemTrayIcon(QSystemTrayIcon):
+	def __init__(self, icon, parent=None):
+		QSystemTrayIcon.__init__(self, icon, parent)
+		menu = QMenu(parent)
+
+		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
+		exitAction.setShortcut('esc')      
+		exitAction.triggered.connect(qApp.quit)
+		menu.addAction(exitAction)
+		self.setContextMenu(menu)
+
 if __name__=="__main__":
 
 	app = QApplication([]) # app = QApplication(sys.argv)
@@ -250,7 +261,6 @@ if __name__=="__main__":
 
 	username = sett.getParametr("username")
 	password = sett.getParametr("password")
-
 
 	if GetKPI.auth_probe(username, password) == False:
 		print("Требуется авторизация")
@@ -298,6 +308,10 @@ if __name__=="__main__":
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
+
+		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		trayIcon.show()
+
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
 		win.show()
