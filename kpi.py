@@ -153,23 +153,24 @@ class MyWindow(QWidget):
 			QtGui.QTableView.scrollTo(self, index, hint)
 	
 	def toggle_vip(self):
-		if self.table_view.isColumnHidden(3):
-			self.table_view.showColumn(3)
-			self.table_view.showColumn(11)
+		if self.table_view.isColumnHidden(9):
+			self.table_view.showColumn(9)
+			self.table_view.showColumn(21)
 			# self.table_view.selectColumn(3)
 		else:
-			self.table_view.hideColumn(3)
-			self.table_view.hideColumn(11)
+			self.table_view.hideColumn(9)
+			self.table_view.hideColumn(21)
 		self.statusbar.showMessage('изменение видимости VIP')
 
 	def toggle_group(self):
-		clist = [9,10,11,12,13,14,15,16]
-		if self.table_view.isColumnHidden(clist[0]):
-			for i in clist:
+		# clist = [15,26]
+		# if self.table_view.isColumnHidden(clist[0]):
+		if self.table_view.isColumnHidden(15):
+			for i in range(15,26):
 				self.table_view.showColumn(i)
 				# print('hide' + str(i))
 		else:
-			for i in clist:
+			for i in range(15,26):
 				self.table_view.hideColumn(i)
 				# print('show' + str(i))
 		self.statusbar.showMessage('изменение видимости показателей групп')
@@ -290,7 +291,6 @@ if __name__=="__main__":
 
 				if len(header) <= len(od):
 					header = header + [indicator_name,]
-					print(str(r_feild) + indicator_name)
 
 				indicator = float(cdict[record][r_feild])
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
