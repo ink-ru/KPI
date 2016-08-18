@@ -245,6 +245,7 @@ if __name__=="__main__":
 	app = QApplication([]) # app = QApplication(sys.argv)
 	sett = AppSettings()
 	auth = False
+	header = ['Сотрудник']
 
 	username = sett.getParametr("username")
 	password = sett.getParametr("password")
@@ -259,24 +260,6 @@ if __name__=="__main__":
 		auth = True
 
 	if auth == True:
-		header = ['Сотрудник', 
-		"баллы грязные",
-		"просроченно задач",
-		"VIP",
-		"баллы чистые",
-		"всего задач",
-		"процент в срок",
-		"задач в срок",
-		"штраф за провис",
-		"подразделение - баллы грязные",
-		"подразделение - просроченно задач",
-		"подразделение - VIP",
-		"подразделение - баллы чистые",
-		"подразделение - всего задач",
-		"подразделение - процент в срок",
-		"подразделение - в срок",
-		"подразделение - штраф за провис"
-		]
 
 		full_url = domain_url + api_uri + api_result_get
 		rjson = GetKPI.get_auth_url(full_url, username, password)
@@ -298,7 +281,17 @@ if __name__=="__main__":
 
 			od = collections.OrderedDict(sorted(cdict[record].items(), reverse=True))
 			for r_feild in od:
-				indicator_name = str(result_rus_dict[r_feild])
+				try:
+					indicator_name = str(result_rus_dict[r_feild])
+
+				except KeyError as e:
+					indicator_name = str(r_feild)
+					# raise ValueError('Undefined unit: {}'.format(e.args[0]))
+
+				if len(header) < len(od):
+					header = header + [indicator_name,]
+					print(indicator_name)
+
 				indicator = float(cdict[record][r_feild])
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
 				user_data += (indicator,)
