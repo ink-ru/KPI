@@ -240,25 +240,6 @@ class MyWindow(QWidget):
 			self.statusbar.showMessage('Ошибка сохранения ID')
 		return
 
-	def create_icom(self, text):
-		font = QFont(self.fontComboBox.currentFont())
-		# font.setPointSizeF(self.sizeSpinBox.value())
-		
-		text = unicode(text)
-		if not text:
-				return
-		
-		pixmap = QPixmap(64, 64)
-		pixmap.fill(Qt.white)
-		
-		painter = QPainter()
-		painter.begin(pixmap)
-		painter.setFont(font)
-		painter.drawText(0, text)
-		painter.end()
-	
-		return(pixmap)
-
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
 		QAbstractTableModel.__init__(self, parent, *args)
@@ -352,6 +333,26 @@ class SystemTrayIcon(QSystemTrayIcon):
 		menu.addAction(exitAction)
 		self.setContextMenu(menu)
 
+	def create_icon(text):
+		font = QFont("Arial", 24)
+		# font = QFont(self.fontComboBox.currentFont())
+		# font.setPointSizeF(self.sizeSpinBox.value())
+		
+		if not text:
+				return
+		
+		pixmap = QPixmap(64, 64)
+		pixmap.fill(Qt.white)
+		
+		painter = QPainter()
+		painter.begin(pixmap)
+		painter.setFont(font)
+		# painter.drawText(int(xShadow), int(yShadow), int(w), int(h), Qt.AlignLeft, text)
+		painter.drawText(1, 1, 64, 64, Qt.AlignLeft, text)
+		painter.end()
+	
+		return(pixmap)
+
 if __name__=="__main__":
 
 	def split_header(text):
@@ -417,7 +418,9 @@ if __name__=="__main__":
 		
 		win = MyWindow(data_list, header)
 
-		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		icon = SystemTrayIcon.create_icon(icon_data)
+		# trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		trayIcon = SystemTrayIcon(QIcon(icon), win)
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
