@@ -73,8 +73,43 @@ class MyWindow(QWidget):
 		self.table_view = QTableView()
 		self.table_view.setModel(table_model)
 
+		# http://doc.qt.io/qt-5/stylesheet-examples.html
+		# http://doc.qt.io/qt-5/stylesheet-reference.html
+		style = '''border: none;'''
+		# отключаем показ границ виджета
+		self.table_view.setStyleSheet(style)
+
 		# Установка шрифта
-		# self.setStyleSheet('font: 10pt "Courier New"')
+		self.setStyleSheet('''/* font: 12pt "Arial"; */
+
+		QHeaderView::up-arrow, QHeaderView::down-arrow, QHeaderView::indicator, QTableView::indicator {color:#fff;
+		margin: 0;
+		padding: 0;
+		spacing: 0;
+		margin-right: -10px;
+		width: 2px;
+		max-width: 2px;
+		/* subcontrol-origin: content;
+		subcontrol-origin: margin;
+		subcontrol-origin: border; */
+		subcontrol-position: right center;
+		position: absolute;
+		right: -10px;
+		icon-size: 2px;
+		show-decoration-selected: 0;
+		opacity: 0;
+		viasbility: hidden;
+		font-size: 1px;
+		outline-offset:0;
+		border: none;
+		background: none;
+		}
+
+		QTableView::item:hover {
+		    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+		                                stop: 0 #FAFBFE, stop: 1 #DCDEF1);
+		}
+			''')
 		font = QFont("Arial", 12)
 		self.table_view.setFont(font)
 
@@ -87,11 +122,11 @@ class MyWindow(QWidget):
 		# пользователь не может изменять размер столбцов
 		# self.table_view.horizontalHeader().setResizeMode(QtGui.QHeaderView.Fixed)
 
+		self.table_view.horizontalHeader().setCascadingSectionResizes(False)
+		# self.table_view.horizontalHeader().setDefaultSectionSize(100)
+
 		# включаем растягивание последнего столбца
 		self.table_view.horizontalHeader().setStretchLastSection(False)
-
-		# отключаем показ границ виджета
-		self.table_view.setStyleSheet('''border: none;''')
 
 		# Сетка
 		# self.table_view.setShowGrid(False)
@@ -115,18 +150,24 @@ class MyWindow(QWidget):
 		self.myQMenuBar = QMenuBar(self)
 		fileMenu = self.myQMenuBar.addMenu('File')
 
-		# exitAction = QAction('Exit', self)
 		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		fileMenu.addAction(exitAction)
 
-		# fileMenu.addSeparator() # -----
+		# fileMenu.addSeparator()
 
 		restartAction = QAction(QIcon('./img/reload.png'), 'Reload', self)
 		restartAction.setShortcut('f5')       
 		restartAction.triggered.connect(self.action_reload)
 		fileMenu.addAction(restartAction)
+
+		fileMenu = self.myQMenuBar.addMenu('Preferences')
+
+		set_id_Action = QAction('Изменить учетные данные', self)
+		set_id_Action.setShortcut('alt+i')       
+		set_id_Action.triggered.connect(self.action_set_auth)
+		fileMenu.addAction(set_id_Action)
 
 		toggleVIPAction = QAction(QIcon('./img/vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
@@ -150,7 +191,7 @@ class MyWindow(QWidget):
 
 	def scrollTo(self, index, hint):
 		if index.column() > 1:
-			QtGui.QTableView.scrollTo(self, index, hint)
+			QTableView.scrollTo(self, index, hint)
 	
 	def toggle_vip(self):
 		if self.table_view.isColumnHidden(9):
@@ -178,6 +219,45 @@ class MyWindow(QWidget):
 	def action_reload(self):
 		subprocess.Popen([__file__])
 		sys.exit(0)
+
+	# action_set_auth
+	def action_set_auth(self):
+		saver = Login()
+		if saver.exec_() == QDialog.Accepted:
+			self.statusbar.showMessage('Данные сохранены')
+			return True
+		else:
+			self.statusbar.showMessage('Ошибка сохранения данных!')
+		return
+
+
+	def action_set_id(self):
+		saver = SetID()
+		if saver.exec_() == QDialog.Accepted:
+			self.statusbar.showMessage('ID сохранен')
+			return True
+		else:
+			self.statusbar.showMessage('Ошибка сохранения ID')
+		return
+
+	def create_icom(self, text):
+		font = QFont(self.fontComboBox.currentFont())
+		# font.setPointSizeF(self.sizeSpinBox.value())
+		
+		text = unicode(text)
+		if not text:
+				return
+		
+		pixmap = QPixmap(64, 64)
+		pixmap.fill(Qt.white)
+		
+		painter = QPainter()
+		painter.begin(pixmap)
+		painter.setFont(font)
+		painter.drawText(0, text)
+		painter.end()
+	
+		return(pixmap)
 
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
@@ -218,6 +298,26 @@ class MyTableModel(QAbstractTableModel):
 			self.mylist.reverse()
 		self.emit(SIGNAL("layoutChanged()"))
 
+class SetID(QDialog):
+	def __init__(self, parent=None):
+		super(SetID, self).__init__(parent)
+		self.text_id = QLineEdit(self)
+		self.buttonSave = QPushButton('Save ID', self)
+		self.buttonSave.clicked.connect(self.save_id)
+		layout = QVBoxLayout(self)
+		layout.addWidget(self.text_id)
+		layout.addWidget(self.buttonSave)
+
+	def save_id(self):
+		sett = AppSettings()
+		sett.setParametr("my_id", self.text_id.text())
+
+		if len(self.text_id.text()) > 0:
+			self.accept()
+		else:
+			QMessageBox.warning(
+				self, 'Error', 'Неверный ID!')
+
 class Login(QDialog):
 	def __init__(self, parent=None):
 		super(Login, self).__init__(parent)
@@ -253,6 +353,12 @@ class SystemTrayIcon(QSystemTrayIcon):
 		self.setContextMenu(menu)
 
 if __name__=="__main__":
+
+	def split_header(text):
+		text = text.split(' ', 2)
+		s = "\n";
+		text =  s.join( text )
+		return text
 
 	app = QApplication([]) # app = QApplication(sys.argv)
 	sett = AppSettings()
@@ -293,14 +399,16 @@ if __name__=="__main__":
 			od = collections.OrderedDict(sorted(cdict[record].items(), reverse=True))
 			for r_feild in od:
 				try:
-					indicator_name = str(result_rus_dict[r_feild])
-
+					indicator_name = split_header(str(result_rus_dict[r_feild]))
 				except KeyError as e:
 					indicator_name = str(r_feild)
 					# raise ValueError('Undefined unit: {}'.format(e.args[0]))
 
 				if len(header) <= len(od):
 					header = header + [indicator_name,]
+
+				if (udict[record]['login'] == username) and (r_feild == 'result'):
+					icon_data = str(cdict[record][r_feild])
 
 				indicator = float(cdict[record][r_feild])
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
@@ -310,6 +418,7 @@ if __name__=="__main__":
 		win = MyWindow(data_list, header)
 
 		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
 		win.setMinimumSize(800, 600)
