@@ -121,7 +121,7 @@ class MyWindow(QWidget):
 		# self.table_view.setSelectionBehavior(QAbstractItemView.SelectRows)
 		
 		# пользователь не может изменять размер столбцов
-		# self.table_view.horizontalHeader().setResizeMode(QtGui.QHeaderView.Fixed)
+		# self.table_view.horizontalHeader().setResizeMode(QHeaderView.Fixed)
 
 		self.table_view.horizontalHeader().setCascadingSectionResizes(False)
 		# self.table_view.horizontalHeader().setDefaultSectionSize(100)
@@ -324,8 +324,9 @@ class Login(QDialog):
 				self, 'Error', 'Неверный логин или пароль!')
 
 class SystemTrayIcon(QSystemTrayIcon):
-	def __init__(self, icon, parent=None):
+	def __init__(self, icon, parent=None, kpi=''):
 		QSystemTrayIcon.__init__(self, icon, parent)
+		self.kpi = kpi
 		menu = QMenu(parent)
 
 		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
@@ -333,6 +334,14 @@ class SystemTrayIcon(QSystemTrayIcon):
 		exitAction.triggered.connect(qApp.quit)
 		menu.addAction(exitAction)
 		self.setContextMenu(menu)
+
+		# on activation listener
+		self.activated.connect(self.trayActivated)
+
+	def trayActivated(self, reason):
+		if reason == QSystemTrayIcon.Trigger:
+			CommonTools.show_popup('всего баллов', str(self.kpi))
+			print('left click: TODO')
 
 	def create_icon(text):
 		font = QFont("Arial", 24)
@@ -358,6 +367,18 @@ class SystemTrayIcon(QSystemTrayIcon):
 		painter.end()
 	
 		return(pixmap)
+
+
+class CommonTools():
+	def show_popup(header, data):
+		cmd = "notify-send '" + str(header) + "' '" + str(data) + "' '-t' 5000"
+		process = subprocess.Popen(cmd, shell=True, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+		# process = subprocess.call(['notify-send', data])
+
+		# stdout, stderr = process.communicate() # only with Popen
+		# print(stdout)
+		# print(stderr)
+		return True
 
 if __name__=="__main__":
 
@@ -416,6 +437,7 @@ if __name__=="__main__":
 
 				if (udict[record]['login'] == username) and (r_feild == 'result'):
 					icon_data = str(cdict[record][r_feild])
+					notify_name = emp_name
 
 				indicator = round(float(cdict[record][r_feild]),2)
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
@@ -427,7 +449,7 @@ if __name__=="__main__":
 		# http://ftp.ics.uci.edu/pub/centos0/ics-custom-build/BUILD/PyQt-x11-gpl-4.7.2/examples/desktop/systray/systray.py
 		icon = SystemTrayIcon.create_icon(icon_data)
 		# trayIcon = SystemTrayIcon(QIcon("app.png"), win)
-		trayIcon = SystemTrayIcon(QIcon(icon), win)
+		trayIcon = SystemTrayIcon(QIcon(icon), win, icon_data)
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
@@ -435,7 +457,11 @@ if __name__=="__main__":
 		win.resize(1024, 768)
 		win.show()
 		win.statusbar.showMessage('Ready')
+		
+		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
+		
 		app.exec_()
+
 	else:
 		app.quit
 		
