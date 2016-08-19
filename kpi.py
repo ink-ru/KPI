@@ -106,8 +106,9 @@ class MyWindow(QWidget):
 		}
 
 		QTableView::item:hover {
-		    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-		                                stop: 0 #FAFBFE, stop: 1 #DCDEF1);
+			background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+										stop: 0 #cfcfdd, stop: 1 #f0f0f0);
+			border: 1px solid #000;
 		}
 			''')
 		font = QFont("Arial", 12)
@@ -337,18 +338,23 @@ class SystemTrayIcon(QSystemTrayIcon):
 		font = QFont("Arial", 24)
 		# font = QFont(self.fontComboBox.currentFont())
 		# font.setPointSizeF(self.sizeSpinBox.value())
+		metrics = QFontMetricsF(font)
+
+		rect = metrics.boundingRect(text)
+		position = -rect.topLeft()
 		
 		if not text:
 				return
 		
-		pixmap = QPixmap(64, 64)
+		pixmap = QPixmap(rect.width(), rect.height())
 		pixmap.fill(Qt.white)
 		
 		painter = QPainter()
 		painter.begin(pixmap)
 		painter.setFont(font)
-		# painter.drawText(int(xShadow), int(yShadow), int(w), int(h), Qt.AlignLeft, text)
-		painter.drawText(1, 1, 64, 64, Qt.AlignLeft, text)
+		painter.setPen(QColor(0, 0, 0))
+		# painter.drawText(1, 1, 64, 64, Qt.AlignLeft, text)
+		painter.drawText(position, text)
 		painter.end()
 	
 		return(pixmap)
@@ -411,13 +417,14 @@ if __name__=="__main__":
 				if (udict[record]['login'] == username) and (r_feild == 'result'):
 					icon_data = str(cdict[record][r_feild])
 
-				indicator = float(cdict[record][r_feild])
+				indicator = round(float(cdict[record][r_feild]),2)
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
 				user_data += (indicator,)
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
 
+		# http://ftp.ics.uci.edu/pub/centos0/ics-custom-build/BUILD/PyQt-x11-gpl-4.7.2/examples/desktop/systray/systray.py
 		icon = SystemTrayIcon.create_icon(icon_data)
 		# trayIcon = SystemTrayIcon(QIcon("app.png"), win)
 		trayIcon = SystemTrayIcon(QIcon(icon), win)
