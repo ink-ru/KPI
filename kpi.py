@@ -68,6 +68,7 @@ class MyWindow(QWidget):
 		# setGeometry(x_pos, y_pos, width, height)
 		self.setGeometry(300, 200, 570, 450)
 		self.setWindowTitle("Demis KPI")
+		self.kpi = ''
 		self.setWindowIcon(QIcon('app.png'))
 		table_model = MyTableModel(self, data_list, header)
 		self.table_view = QTableView()
@@ -190,6 +191,14 @@ class MyWindow(QWidget):
 		layout.addWidget(self.table_view)
 		layout.addWidget(self.statusbar)
 
+	def event(self, event):
+		if (event.type() == QEvent.WindowStateChange and self.isMinimized()):
+			# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
+			self.hide()
+			return True
+		else:
+			return super(MyWindow, self).event(event)
+
 	def scrollTo(self, index, hint):
 		if index.column() > 1:
 			QTableView.scrollTo(self, index, hint)
@@ -231,7 +240,6 @@ class MyWindow(QWidget):
 			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
 
-
 	def action_set_id(self):
 		saver = SetID()
 		if saver.exec_() == QDialog.Accepted:
@@ -240,6 +248,12 @@ class MyWindow(QWidget):
 		else:
 			self.statusbar.showMessage('Ошибка сохранения ID')
 		return
+
+	def trayActivated(self, reason):
+		if reason == QSystemTrayIcon.DoubleClick:
+			self.show()
+		elif reason == QSystemTrayIcon.Trigger:
+			CommonTools.show_popup('всего баллов', str(self.kpi))
 
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
@@ -324,9 +338,8 @@ class Login(QDialog):
 				self, 'Error', 'Неверный логин или пароль!')
 
 class SystemTrayIcon(QSystemTrayIcon):
-	def __init__(self, icon, parent=None, kpi=''):
+	def __init__(self, icon, parent=None):
 		QSystemTrayIcon.__init__(self, icon, parent)
-		self.kpi = kpi
 		menu = QMenu(parent)
 
 		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
@@ -336,15 +349,14 @@ class SystemTrayIcon(QSystemTrayIcon):
 		self.setContextMenu(menu)
 
 		# on activation listener
-		self.activated.connect(self.trayActivated)
+		# self.activated.connect(self.trayActivated)
 
 	def trayActivated(self, reason):
+		# if reason == QSystemTrayIcon.DoubleClick: # reason == 2:
 		if reason == QSystemTrayIcon.Trigger:
-			CommonTools.show_popup('всего баллов', str(self.kpi))
+			CommonTools.show_popup('всего баллов', str(self.kpi))     
 
 	def create_icon(self, text):
-		self.kpi = text
-
 		font = QFont("Arial", 24)
 		font.setPointSizeF(font.pointSizeF() * 2)
 		font.setWeight(600)
@@ -451,9 +463,11 @@ if __name__=="__main__":
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
+		win.kpi = icon_data
 
 		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
+		trayIcon.activated.connect(win.trayActivated)
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
