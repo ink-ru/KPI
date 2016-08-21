@@ -341,12 +341,13 @@ class SystemTrayIcon(QSystemTrayIcon):
 	def trayActivated(self, reason):
 		if reason == QSystemTrayIcon.Trigger:
 			CommonTools.show_popup('всего баллов', str(self.kpi))
-			print('left click: TODO')
 
-	def create_icon(text):
+	def create_icon(self, text):
+		self.kpi = text
+
 		font = QFont("Arial", 24)
-		# font = QFont(self.fontComboBox.currentFont())
-		# font.setPointSizeF(self.sizeSpinBox.value())
+		font.setPointSizeF(font.pointSizeF() * 2)
+		font.setWeight(600)
 		metrics = QFontMetricsF(font)
 
 		rect = metrics.boundingRect(text)
@@ -395,12 +396,17 @@ if __name__=="__main__":
 
 	username = sett.getParametr("username")
 	password = sett.getParametr("password")
+	# username = sett.setParametr("username", "")
+	# password = sett.setParametr("password", "")
 
 	if GetKPI.auth_probe(username, password) == False:
 		print("Требуется авторизация")
 		login = Login()
 		if login.exec_() == QDialog.Accepted:
 			auth = True
+			subprocess.Popen([__file__])
+			sys.exit(0)
+
 	else:
 		auth = True
 
@@ -446,10 +452,8 @@ if __name__=="__main__":
 		
 		win = MyWindow(data_list, header)
 
-		# http://ftp.ics.uci.edu/pub/centos0/ics-custom-build/BUILD/PyQt-x11-gpl-4.7.2/examples/desktop/systray/systray.py
-		icon = SystemTrayIcon.create_icon(icon_data)
-		# trayIcon = SystemTrayIcon(QIcon("app.png"), win)
-		trayIcon = SystemTrayIcon(QIcon(icon), win, icon_data)
+		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
