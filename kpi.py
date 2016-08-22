@@ -73,6 +73,7 @@ class MyWindow(QWidget):
 		table_model = MyTableModel(self, data_list, header)
 		self.table_view = QTableView()
 		self.table_view.setModel(table_model)
+		self.sett = AppSettings()
 
 		# http://doc.qt.io/qt-5/stylesheet-examples.html
 		# http://doc.qt.io/qt-5/stylesheet-reference.html
@@ -191,6 +192,13 @@ class MyWindow(QWidget):
 		layout.addWidget(self.table_view)
 		layout.addWidget(self.statusbar)
 
+		if self.sett.getParametr("vip") == '0':
+			self.toggle_vip()
+
+		print('initial Group state - ' + str(self.sett.getParametr("group")))
+		if self.sett.getParametr("group") == '0':
+			self.toggle_group()
+
 	def event(self, event):
 		if (event.type() == QEvent.WindowStateChange and self.isMinimized()):
 			# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
@@ -207,23 +215,22 @@ class MyWindow(QWidget):
 		if self.table_view.isColumnHidden(9):
 			self.table_view.showColumn(9)
 			self.table_view.showColumn(21)
-			# self.table_view.selectColumn(3)
+			self.sett.setParametr("vip", 1)
 		else:
 			self.table_view.hideColumn(9)
 			self.table_view.hideColumn(21)
+			self.sett.setParametr("vip", 0)
 		self.statusbar.showMessage('изменение видимости VIP')
 
 	def toggle_group(self):
-		# clist = [15,26]
-		# if self.table_view.isColumnHidden(clist[0]):
 		if self.table_view.isColumnHidden(15):
-			for i in range(15,26):
+			for i in range(15,27):
 				self.table_view.showColumn(i)
-				# print('hide' + str(i))
+			self.sett.setParametr("group", 1)
 		else:
-			for i in range(15,26):
+			for i in range(15,27):
 				self.table_view.hideColumn(i)
-				# print('show' + str(i))
+			self.sett.setParametr("group", 0)
 		self.statusbar.showMessage('изменение видимости показателей групп')
 
 	def action_reload(self):
@@ -249,8 +256,11 @@ class MyWindow(QWidget):
 			self.statusbar.showMessage('Ошибка сохранения ID')
 		return
 
+	# Не используется
+	# Реализовано в классе SystemTrayIcon
 	def trayActivated(self, reason):
 		if reason == QSystemTrayIcon.DoubleClick:
+			self.setWindowState(Qt.WindowNoState)
 			self.show()
 		elif reason == QSystemTrayIcon.Trigger:
 			CommonTools.show_popup('всего баллов', str(self.kpi))
@@ -294,26 +304,6 @@ class MyTableModel(QAbstractTableModel):
 			self.mylist.reverse()
 		self.emit(SIGNAL("layoutChanged()"))
 
-class SetID(QDialog):
-	def __init__(self, parent=None):
-		super(SetID, self).__init__(parent)
-		self.text_id = QLineEdit(self)
-		self.buttonSave = QPushButton('Save ID', self)
-		self.buttonSave.clicked.connect(self.save_id)
-		layout = QVBoxLayout(self)
-		layout.addWidget(self.text_id)
-		layout.addWidget(self.buttonSave)
-
-	def save_id(self):
-		sett = AppSettings()
-		sett.setParametr("my_id", self.text_id.text())
-
-		if len(self.text_id.text()) > 0:
-			self.accept()
-		else:
-			QMessageBox.warning(
-				self, 'Error', 'Неверный ID!')
-
 class Login(QDialog):
 	def __init__(self, parent=None):
 		super(Login, self).__init__(parent)
@@ -338,23 +328,38 @@ class Login(QDialog):
 				self, 'Error', 'Неверный логин или пароль!')
 
 class SystemTrayIcon(QSystemTrayIcon):
-	def __init__(self, icon, parent=None):
+	def __init__(self, icon, parent, kpi):
 		QSystemTrayIcon.__init__(self, icon, parent)
+		self.win = parent
+		self.kpi = kpi
 		menu = QMenu(parent)
 
-		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
+		showAction = QAction('Показать окно программы', self)
+		# showAction.setShortcut('ctrl+h')      
+		showAction.triggered.connect(self.show_action)
+		menu.addAction(showAction)
+
+		exitAction = QAction('Exit', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		menu.addAction(exitAction)
+
 		self.setContextMenu(menu)
 
 		# on activation listener
-		# self.activated.connect(self.trayActivated)
+		self.activated.connect(self.trayActivated)
+
+	def show_action(self):
+		self.win.setWindowState(Qt.WindowNoState)
+		self.win.show()
+		return True
 
 	def trayActivated(self, reason):
-		# if reason == QSystemTrayIcon.DoubleClick: # reason == 2:
-		if reason == QSystemTrayIcon.Trigger:
-			CommonTools.show_popup('всего баллов', str(self.kpi))     
+		if reason == QSystemTrayIcon.DoubleClick:
+			self.win.setWindowState(Qt.WindowNoState)
+			self.win.show()
+		elif reason == QSystemTrayIcon.Trigger:
+			CommonTools.show_popup('всего баллов', str(self.kpi))    
 
 	def create_icon(self, text):
 		font = QFont("Arial", 24)
@@ -463,11 +468,15 @@ if __name__=="__main__":
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
-		win.kpi = icon_data
+		
 
-		trayIcon = SystemTrayIcon(QIcon("app.png"), win)
+		trayIcon = SystemTrayIcon(QIcon("app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
-		trayIcon.activated.connect(win.trayActivated)
+
+		# Реализовано в классе SystemTrayIcon
+		# win.kpi = icon_data
+		# trayIcon.activated.connect(win.trayActivated)
+
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
