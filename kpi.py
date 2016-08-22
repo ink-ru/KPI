@@ -174,10 +174,12 @@ class MyWindow(QWidget):
 
 		toggleVIPAction = QAction(QIcon('./img/vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
+		toggleVIPAction.setCheckable(True)
 		toggleVIPAction.triggered.connect(self.toggle_vip)
 
 		toggleGroupAction = QAction(QIcon('./img/group.png'), 'Group', self)
 		toggleGroupAction.setShortcut('alt+g')
+		toggleGroupAction.setCheckable(True)
 		toggleGroupAction.triggered.connect(self.toggle_group)
 
 		self.toolbar = QToolBar(self)
@@ -194,9 +196,11 @@ class MyWindow(QWidget):
 
 		if self.sett.getParametr("vip") == '0':
 			self.toggle_vip()
+			toggleVIPAction.setChecked(True)
 
 		if self.sett.getParametr("group") == '0':
 			self.toggle_group()
+			toggleGroupAction.setChecked(True)
 
 	# def closeEvent(self,event):
 	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
