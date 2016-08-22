@@ -195,9 +195,15 @@ class MyWindow(QWidget):
 		if self.sett.getParametr("vip") == '0':
 			self.toggle_vip()
 
-		print('initial Group state - ' + str(self.sett.getParametr("group")))
 		if self.sett.getParametr("group") == '0':
 			self.toggle_group()
+
+	# def closeEvent(self,event):
+	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
+	# 	if reply == QMessageBox.Yes:
+	# 		event.accept()
+	# 	else:
+	# 		event.ignore()
 
 	def event(self, event):
 		if (event.type() == QEvent.WindowStateChange and self.isMinimized()):
@@ -363,7 +369,7 @@ class SystemTrayIcon(QSystemTrayIcon):
 
 	def create_icon(self, text):
 		font = QFont("Arial", 24)
-		font.setPointSizeF(font.pointSizeF() * 2)
+		# font.setPointSizeF(font.pointSizeF() * 2)
 		font.setWeight(600)
 		metrics = QFontMetricsF(font)
 
@@ -386,7 +392,6 @@ class SystemTrayIcon(QSystemTrayIcon):
 	
 		return(pixmap)
 
-
 class CommonTools():
 	def show_popup(header, data):
 		cmd = "notify-send '" + str(header) + "' '" + str(data) + "' '-t' 5000"
@@ -396,6 +401,11 @@ class CommonTools():
 		# stdout, stderr = process.communicate() # only with Popen
 		# print(stdout)
 		# print(stderr)
+		return True
+
+	def closeEvent(self):
+		sett.setParametr("geometry", self.saveGeometry());
+		# sett.setParametr("windowState", self.saveState());
 		return True
 
 if __name__=="__main__":
@@ -468,7 +478,7 @@ if __name__=="__main__":
 			data_list = data_list + [user_data,]
 		
 		win = MyWindow(data_list, header)
-		
+		app.aboutToQuit.connect(lambda: CommonTools.closeEvent(win))
 
 		trayIcon = SystemTrayIcon(QIcon("app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
@@ -482,6 +492,7 @@ if __name__=="__main__":
 
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
+		win.restoreGeometry(sett.getParametr("geometry"));
 		win.show()
 		win.statusbar.showMessage('Ready')
 		
