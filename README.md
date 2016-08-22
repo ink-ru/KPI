@@ -10,3 +10,8 @@ sudo apt-get install dpkg debconf debhelper lintian
 ```
 fakeroot dpkg-deb --build supersh
 ```
+
+Установка пакета
+```
+sudo dpkg -i kpi_1.0_all.deb
+```
