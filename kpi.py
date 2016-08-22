@@ -367,9 +367,9 @@ class SystemTrayIcon(QSystemTrayIcon):
 		elif reason == QSystemTrayIcon.Trigger:
 			CommonTools.show_popup('всего баллов', str(self.kpi))    
 
-	def create_icon(self, text):
+	def create_large_icon(self, text):
 		font = QFont("Arial", 24)
-		# font.setPointSizeF(font.pointSizeF() * 2)
+		font.setPointSizeF(font.pointSizeF() * 2)
 		font.setWeight(600)
 		metrics = QFontMetricsF(font)
 
@@ -390,6 +390,21 @@ class SystemTrayIcon(QSystemTrayIcon):
 		painter.drawText(position, text)
 		painter.end()
 	
+		return(pixmap)
+
+	def create_icon(self, text):
+		if not text: return
+		font = QFont("Arial", 26)
+		font.setWeight(600)
+		pixmap = QPixmap(64, 64)
+		pixmap.fill(Qt.white)
+		
+		painter = QPainter()
+		painter.begin(pixmap)
+		painter.setFont(font)
+		painter.setPen(QColor(0, 0, 0))
+		painter.drawText(1, 14, 64, 64, Qt.AlignLeft, text)
+		painter.end()
 		return(pixmap)
 
 class CommonTools():
@@ -492,10 +507,13 @@ if __name__=="__main__":
 
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
-		win.restoreGeometry(sett.getParametr("geometry"));
+		last_geom = sett.getParametr("geometry")
+		if type(last_geom) is not bytearray:
+			last_geom = bytearray()
+			last_geom.extend(sett.getParametr("geometry"))
+		win.restoreGeometry(last_geom)
 		win.show()
 		win.statusbar.showMessage('Ready')
-		
 		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
 		
 		app.exec_()
