@@ -108,8 +108,8 @@ class MyWindow(QWidget):
 		}
 
 		QTableView::item:hover {
-			background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-										stop: 0 #cfcfdd, stop: 1 #f0f0f0);
+			/* background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #cfcfdd, stop: 1 #f0f0f0); */
+			background: grey;
 			border: 1px solid #000;
 		}
 			''')
@@ -512,10 +512,11 @@ if __name__=="__main__":
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
 		last_geom = sett.getParametr("geometry")
-		if type(last_geom) is not bytearray:
-			last_geom = bytearray()
-			last_geom.extend(sett.getParametr("geometry"))
-		win.restoreGeometry(last_geom)
+		if last_geom:
+			if type(last_geom) is not bytearray:
+				last_geom = bytearray()
+				last_geom.extend(sett.getParametr("geometry"))
+			win.restoreGeometry(last_geom)
 		win.show()
 		win.statusbar.showMessage('Ready')
 		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
