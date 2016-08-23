@@ -1,8 +1,8 @@
+# -*- coding: utf-8 -*-
 
-domain_url = "http://otp.demis.ru"
+domain_url = 'aHR0cDovL290cC5kZW1pcy5ydQ=='
 api_uri = "/smoke/oto/uto-kpi-api.php"
 kpi_uri = "/smoke/oto/uto-kpi-tmp.php"
-smoke_uri = "/smoke/"
 api_employees_get = "?action=users&da-rest=json"
 api_result_get = "?action=result&da-rest=json"
 
