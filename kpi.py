@@ -19,6 +19,8 @@ from kpi_dicts import *
 import socket
 socket.setdefaulttimeout(10)
 
+# img_path = '/usr/share/pixmaps/kpi/'
+img_path = './img/'
 # d = base64.b64encode(bytes(domain_url, "utf-8"))
 domain_url = base64.b64decode(domain_url).decode("utf-8", "ignore")
 
@@ -70,7 +72,7 @@ class MyWindow(QWidget):
 		self.setGeometry(300, 200, 570, 450)
 		self.setWindowTitle("Demis KPI")
 		self.kpi = ''
-		self.setWindowIcon(QIcon('app.png'))
+		self.setWindowIcon(QIcon(img_path+'app.png'))
 		table_model = MyTableModel(self, data_list, header)
 		self.table_view = QTableView()
 		self.table_view.setModel(table_model)
@@ -155,14 +157,14 @@ class MyWindow(QWidget):
 		self.myQMenuBar = QMenuBar(self)
 		fileMenu = self.myQMenuBar.addMenu('File')
 
-		exitAction = QAction(QIcon('exit.png'), 'Exit', self)
+		exitAction = QAction(QIcon(img_path+'exit.png'), 'Exit', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		fileMenu.addAction(exitAction)
 
 		# fileMenu.addSeparator()
 
-		restartAction = QAction(QIcon('./img/reload.png'), 'Reload', self)
+		restartAction = QAction(QIcon(img_path+'reload.png'), 'Reload', self)
 		restartAction.setShortcut('f5')       
 		restartAction.triggered.connect(self.action_reload)
 		fileMenu.addAction(restartAction)
@@ -174,13 +176,13 @@ class MyWindow(QWidget):
 		set_id_Action.triggered.connect(self.action_set_auth)
 		fileMenu.addAction(set_id_Action)
 
-		toggleVIPAction = QAction(QIcon('./img/vip.png'), 'VIP', self)
+		toggleVIPAction = QAction(QIcon(img_path+'vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
 		toggleVIPAction.setCheckable(True)
 		toggleVIPAction.setChecked(True)
 		toggleVIPAction.triggered.connect(self.toggle_vip)
 
-		toggleGroupAction = QAction(QIcon('./img/group.png'), 'Group', self)
+		toggleGroupAction = QAction(QIcon(img_path+'group.png'), 'Group', self)
 		toggleGroupAction.setShortcut('alt+g')
 		toggleGroupAction.setCheckable(True)
 		toggleGroupAction.setChecked(True)
@@ -510,7 +512,7 @@ if __name__=="__main__":
 		win = MyWindow(data_list, header, userpos)
 		app.aboutToQuit.connect(lambda: CommonTools.closeEvent(win))
 
-		trayIcon = SystemTrayIcon(QIcon("app.png"), win, icon_data)
+		trayIcon = SystemTrayIcon(QIcon(img_path+"app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
 
 		# Реализовано в классе SystemTrayIcon
