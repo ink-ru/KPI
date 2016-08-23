@@ -1,5 +1,5 @@
 # KPI
-You can use it only inside privete VPN and only after authorization
+You can use it only inside private VPN and only after authorization
 
 Перед сборкой пакета:
 ```
