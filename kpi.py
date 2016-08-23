@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys, re, urllib, json, collections
+import sys, re, urllib, json, collections, base64
 import urllib.parse
 import urllib.request
 import operator # http://stackoverflow.com/questions/19411101/pyside-qtableview-example
@@ -18,6 +18,9 @@ from kpi_dicts import *
 
 import socket
 socket.setdefaulttimeout(10)
+
+# d = base64.b64encode(bytes(domain_url, "utf-8"))
+domain_url = base64.b64decode(domain_url).decode("utf-8", "ignore")
 
 class AppSettings():
 	def __init__(self, parent=None):
@@ -55,9 +58,7 @@ class GetKPI():
 		return html
 
 	def auth_probe(username, password):
-		# content = GetKPI.get_auth_url(domain_url+smoke_uri, username, password)
-		content = GetKPI.get_auth_url(domain_url + api_uri + api_result_get, username, password)
-
+		content = GetKPI.get_auth_url(domain_url + api_uri + api_employees_get, username, password)
 		if content.find("Авторизация LDAP") > 0:
 			return False
 		return True
