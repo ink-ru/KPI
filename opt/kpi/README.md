@@ -3,7 +3,7 @@ You can use it only inside private VPN and only after authorization
 
 Перед сборкой пакета:
 ```
-sudo apt-get install dpkg debconf debhelper lintian
+sudo apt-get install dpkg
 ```
 
 Сборка пакета
