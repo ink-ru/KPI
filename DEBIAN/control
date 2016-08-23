@@ -11,4 +11,3 @@ Standards-Version: 3.9.2
 X-Python-Version: >= 2.6
 Description: "Demis group" KPI script
  You can use it only inside private VPN and only after authorization
- 
