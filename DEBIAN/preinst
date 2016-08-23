@@ -1,0 +1,5 @@
+#!/bin/bash
+
+apt-get install python-qt4
+
+exit 0
