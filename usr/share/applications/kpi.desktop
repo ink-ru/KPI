@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Demis KPI
+Categories=Utility;
+Path=/opt/kpi
+Exec=kpi
+Icon=kpi.png
+Terminal=false
