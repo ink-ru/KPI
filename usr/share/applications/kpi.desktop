@@ -2,8 +2,8 @@
 Type=Application
 Encoding=UTF-8
 Name=Demis KPI
-Categories=Utility;
+Categories=Utility;Development;
 Path=/opt/kpi
-Exec=kpi
+Exec=kpi.py
 Icon=kpi.png
 Terminal=false
