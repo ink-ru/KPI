@@ -63,7 +63,7 @@ class GetKPI():
 		return True
 
 class MyWindow(QWidget):
-	def __init__(self, data_list, header, *args):
+	def __init__(self, data_list, header, userpos, *args):
 		QWidget.__init__(self, *args)
 		# setGeometry(x_pos, y_pos, width, height)
 		self.setGeometry(300, 200, 570, 450)
@@ -142,6 +142,7 @@ class MyWindow(QWidget):
 
 		# enable sorting
 		self.table_view.setSortingEnabled(True)
+		self.table_view.selectRow(userpos)
 		self.table_view.sortByColumn(0, Qt.AscendingOrder)
 		layout = QVBoxLayout(self)
 
@@ -175,11 +176,13 @@ class MyWindow(QWidget):
 		toggleVIPAction = QAction(QIcon('./img/vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
 		toggleVIPAction.setCheckable(True)
+		toggleVIPAction.setChecked(True)
 		toggleVIPAction.triggered.connect(self.toggle_vip)
 
 		toggleGroupAction = QAction(QIcon('./img/group.png'), 'Group', self)
 		toggleGroupAction.setShortcut('alt+g')
 		toggleGroupAction.setCheckable(True)
+		toggleGroupAction.setChecked(True)
 		toggleGroupAction.triggered.connect(self.toggle_group)
 
 		self.toolbar = QToolBar(self)
@@ -196,11 +199,11 @@ class MyWindow(QWidget):
 
 		if self.sett.getParametr("vip") == '0':
 			self.toggle_vip()
-			toggleVIPAction.setChecked(True)
+			toggleVIPAction.setChecked(False)
 
 		if self.sett.getParametr("group") == '0':
 			self.toggle_group()
-			toggleGroupAction.setChecked(True)
+			toggleGroupAction.setChecked(False)
 
 	# def closeEvent(self,event):
 	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
@@ -439,6 +442,9 @@ if __name__=="__main__":
 	sett = AppSettings()
 	auth = False
 	header = ['Сотрудник']
+	icon_data = ''
+	userpos = 0
+	users = []
 
 	username = sett.getParametr("username")
 	password = sett.getParametr("password")
@@ -474,7 +480,13 @@ if __name__=="__main__":
 			emp_name = str(udict[record]['name'])
 			grade = str(udict[record]['grade_name'])
 
+			users += [emp_name,]
+
 			user_data += (emp_name + " (" + grade + ")",)
+
+			if (udict[record]['login'] == username) and (icon_data == ''):
+				icon_data = str(cdict[record]['result'])
+				notify_name = emp_name
 
 			od = collections.OrderedDict(sorted(cdict[record].items(), reverse=True))
 			for r_feild in od:
@@ -487,16 +499,14 @@ if __name__=="__main__":
 				if len(header) <= len(od):
 					header = header + [indicator_name,]
 
-				if (udict[record]['login'] == username) and (r_feild == 'result'):
-					icon_data = str(cdict[record][r_feild])
-					notify_name = emp_name
-
 				indicator = round(float(cdict[record][r_feild]),2)
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
 				user_data += (indicator,)
 			data_list = data_list + [user_data,]
 		
-		win = MyWindow(data_list, header)
+		userpos = sorted(users).index(notify_name)
+
+		win = MyWindow(data_list, header, userpos)
 		app.aboutToQuit.connect(lambda: CommonTools.closeEvent(win))
 
 		trayIcon = SystemTrayIcon(QIcon("app.png"), win, icon_data)
