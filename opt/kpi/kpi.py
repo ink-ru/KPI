@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys, re, urllib, json, collections
+import sys, re, urllib, json, collections, base64
 import urllib.parse
 import urllib.request
 import operator # http://stackoverflow.com/questions/19411101/pyside-qtableview-example
@@ -18,6 +18,11 @@ from kpi_dicts import *
 
 import socket
 socket.setdefaulttimeout(10)
+
+img_path = '/usr/share/pixmaps/kpi/'
+# img_path = './img/'
+# d = base64.b64encode(bytes(domain_url, "utf-8"))
+domain_url = base64.b64decode(domain_url).decode("utf-8", "ignore")
 
 class AppSettings():
 	def __init__(self, parent=None):
@@ -55,21 +60,19 @@ class GetKPI():
 		return html
 
 	def auth_probe(username, password):
-		# content = GetKPI.get_auth_url(domain_url+smoke_uri, username, password)
-		content = GetKPI.get_auth_url(domain_url + api_uri + api_result_get, username, password)
-
+		content = GetKPI.get_auth_url(domain_url + api_uri + api_employees_get, username, password)
 		if content.find("Авторизация LDAP") > 0:
 			return False
 		return True
 
 class MyWindow(QWidget):
-	def __init__(self, data_list, header, *args):
+	def __init__(self, data_list, header, userpos, *args):
 		QWidget.__init__(self, *args)
 		# setGeometry(x_pos, y_pos, width, height)
 		self.setGeometry(300, 200, 570, 450)
 		self.setWindowTitle("Demis KPI")
 		self.kpi = ''
-		self.setWindowIcon(QIcon('/opt/kpi/app.png'))
+		self.setWindowIcon(QIcon(img_path+'app.png'))
 		table_model = MyTableModel(self, data_list, header)
 		self.table_view = QTableView()
 		self.table_view.setModel(table_model)
@@ -142,6 +145,7 @@ class MyWindow(QWidget):
 
 		# enable sorting
 		self.table_view.setSortingEnabled(True)
+		self.table_view.selectRow(userpos)
 		self.table_view.sortByColumn(0, Qt.AscendingOrder)
 		layout = QVBoxLayout(self)
 
@@ -153,14 +157,14 @@ class MyWindow(QWidget):
 		self.myQMenuBar = QMenuBar(self)
 		fileMenu = self.myQMenuBar.addMenu('File')
 
-		exitAction = QAction(QIcon('/opt/kpi/exit.png'), 'Exit', self)
+		exitAction = QAction(QIcon(img_path+'exit.png'), 'Exit', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		fileMenu.addAction(exitAction)
 
 		# fileMenu.addSeparator()
 
-		restartAction = QAction(QIcon('/opt/kpi/img/reload.png'), 'Reload', self)
+		restartAction = QAction(QIcon(img_path+'reload.png'), 'Reload', self)
 		restartAction.setShortcut('f5')       
 		restartAction.triggered.connect(self.action_reload)
 		fileMenu.addAction(restartAction)
@@ -172,14 +176,16 @@ class MyWindow(QWidget):
 		set_id_Action.triggered.connect(self.action_set_auth)
 		fileMenu.addAction(set_id_Action)
 
-		toggleVIPAction = QAction(QIcon('/opt/kpi/img/vip.png'), 'VIP', self)
+		toggleVIPAction = QAction(QIcon(img_path+'vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
 		toggleVIPAction.setCheckable(True)
+		toggleVIPAction.setChecked(True)
 		toggleVIPAction.triggered.connect(self.toggle_vip)
 
-		toggleGroupAction = QAction(QIcon('/opt/kpi/img/group.png'), 'Group', self)
+		toggleGroupAction = QAction(QIcon(img_path+'group.png'), 'Group', self)
 		toggleGroupAction.setShortcut('alt+g')
 		toggleGroupAction.setCheckable(True)
+		toggleGroupAction.setChecked(True)
 		toggleGroupAction.triggered.connect(self.toggle_group)
 
 		self.toolbar = QToolBar(self)
@@ -196,11 +202,11 @@ class MyWindow(QWidget):
 
 		if self.sett.getParametr("vip") == '0':
 			self.toggle_vip()
-			toggleVIPAction.setChecked(True)
+			toggleVIPAction.setChecked(False)
 
 		if self.sett.getParametr("group") == '0':
 			self.toggle_group()
-			toggleGroupAction.setChecked(True)
+			toggleGroupAction.setChecked(False)
 
 	# def closeEvent(self,event):
 	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
@@ -439,6 +445,9 @@ if __name__=="__main__":
 	sett = AppSettings()
 	auth = False
 	header = ['Сотрудник']
+	icon_data = ''
+	userpos = 0
+	users = []
 
 	username = sett.getParametr("username")
 	password = sett.getParametr("password")
@@ -474,7 +483,13 @@ if __name__=="__main__":
 			emp_name = str(udict[record]['name'])
 			grade = str(udict[record]['grade_name'])
 
+			users += [emp_name,]
+
 			user_data += (emp_name + " (" + grade + ")",)
+
+			if (udict[record]['login'] == username) and (icon_data == ''):
+				icon_data = str(cdict[record]['result'])
+				notify_name = emp_name
 
 			od = collections.OrderedDict(sorted(cdict[record].items(), reverse=True))
 			for r_feild in od:
@@ -487,19 +502,17 @@ if __name__=="__main__":
 				if len(header) <= len(od):
 					header = header + [indicator_name,]
 
-				if (udict[record]['login'] == username) and (r_feild == 'result'):
-					icon_data = str(cdict[record][r_feild])
-					notify_name = emp_name
-
 				indicator = round(float(cdict[record][r_feild]),2)
 				# user_data += (str(indicator) + " (" + indicator_name + ")",)
 				user_data += (indicator,)
 			data_list = data_list + [user_data,]
 		
-		win = MyWindow(data_list, header)
+		userpos = sorted(users).index(notify_name)
+
+		win = MyWindow(data_list, header, userpos)
 		app.aboutToQuit.connect(lambda: CommonTools.closeEvent(win))
 
-		trayIcon = SystemTrayIcon(QIcon("/opt/kpi/app.png"), win, icon_data)
+		trayIcon = SystemTrayIcon(QIcon(img_path+"app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
 
 		# Реализовано в классе SystemTrayIcon
