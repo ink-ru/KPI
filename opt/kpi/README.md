@@ -19,7 +19,7 @@ $ sudo apt-get install gdebi
 $ sudo gdebi-gtk kpi_1.0_all.deb
 ```
 
-Depends:
+Список зависимостей (dependencies):
 ```
 python-qt4
 python3-pyqt4
