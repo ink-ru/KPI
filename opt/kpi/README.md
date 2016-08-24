@@ -1,6 +1,11 @@
 # KPI
 You can use it only inside private VPN and only after authorization
 
+Depends:
+```
+python-qt4
+python3-pyqt4
+```
 Перед сборкой пакета:
 ```
 sudo apt-get install dpkg
