@@ -1,5 +1,5 @@
 #!/bin/bash
 
-apt-get install python-qt4
+apt-get install python-qt4 python3-pyqt4
 
 exit 0
