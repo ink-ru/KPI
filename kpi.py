@@ -188,6 +188,13 @@ class MyWindow(QWidget):
 		toggleGroupAction.setChecked(True)
 		toggleGroupAction.triggered.connect(self.toggle_group)
 
+		# copyAction = QAction(self)
+		# copyAction.setShortcut('ctrl+ins')
+		# copyAction.setShortcut('ctrl+c')
+		# copyAction.setShortcut(QKeySequence(Qt.Key_C))
+		# copyAction.triggered.connect(self.copy_cells_to_clipboard)
+		# self.addAction(copyAction)
+
 		self.toolbar = QToolBar(self)
 		self.toolbar.addAction(exitAction)
 		self.toolbar.addAction(restartAction)
@@ -208,6 +215,40 @@ class MyWindow(QWidget):
 			self.toggle_group()
 			toggleGroupAction.setChecked(False)
 
+	def keyPressEvent(self, e):
+		if (e.modifiers() & Qt.ControlModifier):
+			if e.key() in (Qt.Key_C, 16777222): # QKeySequence.Copy
+				self.copy_cells_to_clipboard()
+
+	def copy_cells_to_clipboard(self):
+		if len(self.table_view.selectionModel().selectedIndexes()) > 0:
+			# sort select indexes into rows and columns
+			previous = self.table_view.selectionModel().selectedIndexes()[0]
+			columns = []
+			rows = []
+			for index in self.table_view.selectionModel().selectedIndexes():
+				if previous.column() != index.column():
+					columns.append(rows)
+					rows = []
+				rows.append(index.data())
+				previous = index
+			columns.append(rows)
+
+			# add rows and columns to clipboard            
+			clipboard = ""
+			nrows = len(columns[0])
+			ncols = len(columns)
+			for r in range(nrows):
+				for c in range(ncols):
+					clipboard += str(columns[c][r]).replace('.', ',')
+					if c != (ncols-1):
+						clipboard += '\t'
+				clipboard += '\n'
+
+			# copy to the system clipboard
+			sys_clip = QApplication.clipboard()
+			sys_clip.setText(clipboard)
+
 	# def closeEvent(self,event):
 	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
 	# 	if reply == QMessageBox.Yes:
@@ -216,12 +257,15 @@ class MyWindow(QWidget):
 	# 		event.ignore()
 
 	def event(self, event):
-		if (event.type() == QEvent.WindowStateChange and self.isMinimized()):
-			# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
-			self.hide()
-			return True
+		if event.type() == QEvent.WindowStateChange:
+			if self.isMinimized():
+				# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
+				self.hide()
+				print('minimized')
+				self.sett.setParametr("window_state", 'minimized');
 		else:
 			return super(MyWindow, self).event(event)
+		return True
 
 	def scrollTo(self, index, hint):
 		if index.column() > 1:
@@ -318,7 +362,7 @@ class MyTableModel(QAbstractTableModel):
 			key=operator.itemgetter(col))
 		if order == Qt.DescendingOrder:
 			self.mylist.reverse()
-		self.emit(SIGNAL("layoutChanged()"))
+		self.emit(SIGNAL("layoutChanged()"))        
 
 class Login(QDialog):
 	def __init__(self, parent=None):
@@ -368,6 +412,8 @@ class SystemTrayIcon(QSystemTrayIcon):
 	def show_action(self):
 		self.win.setWindowState(Qt.WindowNoState)
 		self.win.show()
+		self.win.setWindowState(Qt.WindowActive)
+		AppSettings.setParametr(self.win.sett, "window_state", 'shown');
 		return True
 
 	def trayActivated(self, reason):
@@ -428,9 +474,9 @@ class CommonTools():
 		# print(stderr)
 		return True
 
-	def closeEvent(self):
-		sett.setParametr("geometry", self.saveGeometry());
-		# sett.setParametr("windowState", self.saveState());
+	def closeEvent(window):
+		sett.setParametr("geometry", window.saveGeometry());
+		# sett.setParametr("windowState", app.saveState());
 		return True
 
 if __name__=="__main__":
@@ -525,14 +571,22 @@ if __name__=="__main__":
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
 		last_geom = sett.getParametr("geometry")
+		window_state = sett.getParametr("window_state")
 		if last_geom:
 			if type(last_geom) is not bytearray:
 				last_geom = bytearray()
 				last_geom.extend(sett.getParametr("geometry"))
 			win.restoreGeometry(last_geom)
-		win.show()
+		if window_state == 'minimized':
+			win.setWindowState(Qt.WindowMinimized)
+		else:
+			win.show()
 		win.statusbar.showMessage('Ready')
 		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
+
+		timer = QTimer()
+		timer.timeout.connect(lambda: win.action_reload())
+		timer.start(600000) # 60000 trigger every minute.
 		
 		app.exec_()
 
