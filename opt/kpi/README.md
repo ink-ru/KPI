@@ -36,11 +36,7 @@ sudo apt-get install dpkg
 chmod -R 755 kpi
 chmod +x ./kpi/opt/kpi/kpi.py
 fakeroot dpkg-deb --build kpi
-```
-
-Установка пакета:
-```
-sudo dpkg -i kpi_1.0_all.deb
+mv kpi.deb kpi_1.0_all.deb
 ```
 
 https://github.com/ink-ru/KPI/blob/master/README.md
