@@ -51,7 +51,8 @@ class GetKPI():
 		super(GetKPI, self).__init__(parent)
 		# add init code here
 
-	def get_auth_url(url, username, password):		
+	def get_auth_url(url, username, password):
+		# TODO: implement QNetworkRequest and QAbstractNetworkCache
 		data = urllib.parse.urlencode({'ldap-mail': username, 'ldap-pass': password, 'go': ' Войти '})
 		data = data.encode('ascii') # data should be bytes
 		request = urllib.request.Request(url, data)
@@ -171,9 +172,9 @@ class MyWindow(QWidget):
 
 		fileMenu = self.myQMenuBar.addMenu('Preferences')
 
-		set_id_Action = QAction('Изменить учетные данные', self)
+		set_id_Action = QAction('Настройки', self)
 		set_id_Action.setShortcut('alt+i')       
-		set_id_Action.triggered.connect(self.action_set_auth)
+		set_id_Action.triggered.connect(self.action_set_settings)
 		fileMenu.addAction(set_id_Action)
 
 		toggleVIPAction = QAction(QIcon(img_path+'vip.png'), 'VIP', self)
@@ -187,6 +188,13 @@ class MyWindow(QWidget):
 		toggleGroupAction.setCheckable(True)
 		toggleGroupAction.setChecked(True)
 		toggleGroupAction.triggered.connect(self.toggle_group)
+
+		# copyAction = QAction(self)
+		# copyAction.setShortcut('ctrl+ins')
+		# copyAction.setShortcut('ctrl+c')
+		# copyAction.setShortcut(QKeySequence(Qt.Key_C))
+		# copyAction.triggered.connect(self.copy_cells_to_clipboard)
+		# self.addAction(copyAction)
 
 		self.toolbar = QToolBar(self)
 		self.toolbar.addAction(exitAction)
@@ -208,6 +216,40 @@ class MyWindow(QWidget):
 			self.toggle_group()
 			toggleGroupAction.setChecked(False)
 
+	def keyPressEvent(self, e):
+		if (e.modifiers() & Qt.ControlModifier):
+			if e.key() in (Qt.Key_C, 16777222): # QKeySequence.Copy
+				self.copy_cells_to_clipboard()
+
+	def copy_cells_to_clipboard(self):
+		if len(self.table_view.selectionModel().selectedIndexes()) > 0:
+			# sort select indexes into rows and columns
+			previous = self.table_view.selectionModel().selectedIndexes()[0]
+			columns = []
+			rows = []
+			for index in self.table_view.selectionModel().selectedIndexes():
+				if previous.column() != index.column():
+					columns.append(rows)
+					rows = []
+				rows.append(index.data())
+				previous = index
+			columns.append(rows)
+
+			# add rows and columns to clipboard            
+			clipboard = ""
+			nrows = len(columns[0])
+			ncols = len(columns)
+			for r in range(nrows):
+				for c in range(ncols):
+					clipboard += str(columns[c][r]).replace('.', ',')
+					if c != (ncols-1):
+						clipboard += '\t'
+				clipboard += '\n'
+
+			# copy to the system clipboard
+			sys_clip = QApplication.clipboard()
+			sys_clip.setText(clipboard)
+
 	# def closeEvent(self,event):
 	# 	reply = QMessageBox.question(self,'Message',"Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
 	# 	if reply == QMessageBox.Yes:
@@ -216,18 +258,21 @@ class MyWindow(QWidget):
 	# 		event.ignore()
 
 	def event(self, event):
-		if (event.type() == QEvent.WindowStateChange and self.isMinimized()):
-			# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
-			self.hide()
-			return True
+		if event.type() == QEvent.WindowStateChange:
+			if self.isMinimized():
+				# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
+				self.hide()
+				self.sett.setParametr("window_state", 'minimized');
 		else:
 			return super(MyWindow, self).event(event)
+		return True
 
 	def scrollTo(self, index, hint):
 		if index.column() > 1:
 			QTableView.scrollTo(self, index, hint)
 	
 	def toggle_vip(self):
+		# TODO store ranges in app settings
 		if self.table_view.isColumnHidden(9):
 			self.table_view.showColumn(9)
 			self.table_view.showColumn(21)
@@ -239,6 +284,7 @@ class MyWindow(QWidget):
 		self.statusbar.showMessage('изменение видимости VIP')
 
 	def toggle_group(self):
+		# TODO store ranges in app settings
 		if self.table_view.isColumnHidden(15):
 			for i in range(15,27):
 				self.table_view.showColumn(i)
@@ -250,12 +296,12 @@ class MyWindow(QWidget):
 		self.statusbar.showMessage('изменение видимости показателей групп')
 
 	def action_reload(self):
+		# TODO: reload model only - http://www.qtcentre.org/threads/31770-How-to-inform-a-Model-TableView-that-some-data-changed
 		subprocess.Popen([__file__])
 		sys.exit(0)
 
-	# action_set_auth
-	def action_set_auth(self):
-		saver = Login()
+	def action_set_settings(self):
+		saver = ChangeSettings()
 		if saver.exec_() == QDialog.Accepted:
 			self.statusbar.showMessage('Данные сохранены')
 			return True
@@ -263,23 +309,14 @@ class MyWindow(QWidget):
 			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
 
-	def action_set_id(self):
-		saver = SetID()
+	def action_set_settings_old(self):
+		saver = Login()
 		if saver.exec_() == QDialog.Accepted:
-			self.statusbar.showMessage('ID сохранен')
+			self.statusbar.showMessage('Данные сохранены')
 			return True
 		else:
-			self.statusbar.showMessage('Ошибка сохранения ID')
+			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
-
-	# Не используется
-	# Реализовано в классе SystemTrayIcon
-	def trayActivated(self, reason):
-		if reason == QSystemTrayIcon.DoubleClick:
-			self.setWindowState(Qt.WindowNoState)
-			self.show()
-		elif reason == QSystemTrayIcon.Trigger:
-			CommonTools.show_popup('всего баллов', str(self.kpi))
 
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
@@ -320,11 +357,59 @@ class MyTableModel(QAbstractTableModel):
 			self.mylist.reverse()
 		self.emit(SIGNAL("layoutChanged()"))
 
+class ChangeSettings(QDialog):
+	def __init__(self, parent=None):
+		super(ChangeSettings, self).__init__(parent)
+		self.sett = AppSettings()
+
+		self.loginLabel = QLabel("Login: ")
+		self.textName = QLineEdit(self)
+		self.textName.setText(self.sett.getParametr("username"))
+
+		self.passwordLabel = QLabel("Password: ")
+		self.textPass = QLineEdit(self)
+		self.textPass.setText(self.sett.getParametr("password"))
+
+		self.periodLabel = QLabel("Период обновления: ")
+		self.listWidget = QListWidget()
+		for i in ('не обновлять','1','15','30','60'):
+			item = QListWidgetItem(i)
+			self.listWidget.addItem(item)
+		refresh_period = self.sett.getParametr("refresh_period")
+		if refresh_period:
+			for i in self.listWidget.findItems(refresh_period, Qt.MatchFixedString):
+				if i.text() == refresh_period:
+					self.listWidget.setCurrentItem(i)
+					break
+
+		self.buttonSave = QPushButton('Сохранить', self)
+		self.buttonSave.clicked.connect(self.handleSubmit)
+
+		layout = QVBoxLayout(self)
+		layout.addWidget(self.loginLabel)
+		layout.addWidget(self.textName)
+		layout.addWidget(self.passwordLabel)
+		layout.addWidget(self.textPass)
+		layout.addWidget(self.periodLabel)
+		layout.addWidget(self.listWidget)
+		layout.addWidget(self.buttonSave)
+
+	def handleSubmit(self):
+		self.sett.setParametr("username", self.textName.text())
+		self.sett.setParametr("password", self.textPass.text())
+		if int(self.listWidget.selectedItems()[0].text()) > 0:
+			refresh_period = self.sett.setParametr("refresh_period", self.listWidget.selectedItems()[0].text())	
+		else:
+			refresh_period = self.sett.setParametr("refresh_period", '0')
+		self.accept()
+
 class Login(QDialog):
 	def __init__(self, parent=None):
 		super(Login, self).__init__(parent)
 		self.textName = QLineEdit(self)
+		self.textName.setText("login")
 		self.textPass = QLineEdit(self)
+		self.textPass.setText("password")
 		self.buttonLogin = QPushButton('Login', self)
 		self.buttonLogin.clicked.connect(self.handleLogin)
 		layout = QVBoxLayout(self)
@@ -368,12 +453,13 @@ class SystemTrayIcon(QSystemTrayIcon):
 	def show_action(self):
 		self.win.setWindowState(Qt.WindowNoState)
 		self.win.show()
+		# self.win.setWindowState(Qt.WindowActive)
+		AppSettings.setParametr(self.win.sett, "window_state", 'shown');
 		return True
 
 	def trayActivated(self, reason):
 		if reason == QSystemTrayIcon.DoubleClick:
-			self.win.setWindowState(Qt.WindowNoState)
-			self.win.show()
+			self.show_action()
 		elif reason == QSystemTrayIcon.Trigger:
 			CommonTools.show_popup('всего баллов', str(self.kpi))    
 
@@ -428,9 +514,9 @@ class CommonTools():
 		# print(stderr)
 		return True
 
-	def closeEvent(self):
-		sett.setParametr("geometry", self.saveGeometry());
-		# sett.setParametr("windowState", self.saveState());
+	def closeEvent(window):
+		sett.setParametr("geometry", window.saveGeometry());
+		# sett.setParametr("windowState", app.saveState());
 		return True
 
 if __name__=="__main__":
@@ -469,11 +555,19 @@ if __name__=="__main__":
 
 		full_url = domain_url + api_uri + api_result_get
 		rjson = GetKPI.get_auth_url(full_url, username, password)
-		cdict = json.loads(rjson)
+
+		try:
+			cdict = json.loads(rjson)
+		except:
+			raise ValueError('Сервер вернул пустой ответ')
 
 		full_url = domain_url + api_uri + api_employees_get
 		rjson = GetKPI.get_auth_url(full_url, username, password)
-		udict = json.loads(rjson)
+		
+		try:
+			udict = json.loads(rjson)
+		except:
+			raise ValueError('Сервер вернул пустой ответ')
 
 		data_list = []
 
@@ -515,24 +609,33 @@ if __name__=="__main__":
 		trayIcon = SystemTrayIcon(QIcon(img_path+"app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
 
-		# Реализовано в классе SystemTrayIcon
-		# win.kpi = icon_data
-		# trayIcon.activated.connect(win.trayActivated)
-
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
+
 		last_geom = sett.getParametr("geometry")
+		window_state = sett.getParametr("window_state")
+		refresh_period = int(sett.getParametr("refresh_period"))*60000
+		if not refresh_period:
+			refresh_period = 1800000 # 30 min
+
 		if last_geom:
 			if type(last_geom) is not bytearray:
 				last_geom = bytearray()
 				last_geom.extend(sett.getParametr("geometry"))
 			win.restoreGeometry(last_geom)
-		win.show()
+		if window_state == 'minimized':
+			win.setWindowState(Qt.WindowMinimized)
+		else:
+			win.show()
 		win.statusbar.showMessage('Ready')
 		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
+
+		timer = QTimer()
+		timer.timeout.connect(lambda: win.action_reload())
+		timer.start(refresh_period) # 60000 trigger every minute.
 		
 		app.exec_()
 
