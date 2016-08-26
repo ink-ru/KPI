@@ -372,7 +372,7 @@ class ChangeSettings(QDialog):
 
 		self.periodLabel = QLabel("Период обновления: ")
 		self.listWidget = QListWidget()
-		for i in ('не обновлять','1','15','30','60'):
+		for i in ('не обновлять','15','30','60'):
 			item = QListWidgetItem(i)
 			self.listWidget.addItem(item)
 		refresh_period = self.sett.getParametr("refresh_period")
