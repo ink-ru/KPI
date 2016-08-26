@@ -33,7 +33,9 @@ sudo apt-get install dpkg
 
 Сборка пакета:
 ```
-fakeroot dpkg-deb --build supersh
+chmod -R 755 kpi
+chmod +x ./kpi/opt/kpi/kpi.py
+fakeroot dpkg-deb --build kpi
 ```
 
 Установка пакета:
