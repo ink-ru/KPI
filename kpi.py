@@ -51,7 +51,8 @@ class GetKPI():
 		super(GetKPI, self).__init__(parent)
 		# add init code here
 
-	def get_auth_url(url, username, password):		
+	def get_auth_url(url, username, password):
+		# TODO: implement QNetworkRequest and QAbstractNetworkCache
 		data = urllib.parse.urlencode({'ldap-mail': username, 'ldap-pass': password, 'go': ' Войти '})
 		data = data.encode('ascii') # data should be bytes
 		request = urllib.request.Request(url, data)
@@ -271,6 +272,7 @@ class MyWindow(QWidget):
 			QTableView.scrollTo(self, index, hint)
 	
 	def toggle_vip(self):
+		# TODO store ranges in app settings
 		if self.table_view.isColumnHidden(9):
 			self.table_view.showColumn(9)
 			self.table_view.showColumn(21)
@@ -282,6 +284,7 @@ class MyWindow(QWidget):
 		self.statusbar.showMessage('изменение видимости VIP')
 
 	def toggle_group(self):
+		# TODO store ranges in app settings
 		if self.table_view.isColumnHidden(15):
 			for i in range(15,27):
 				self.table_view.showColumn(i)
@@ -375,7 +378,6 @@ class ChangeSettings(QDialog):
 		refresh_period = self.sett.getParametr("refresh_period")
 		if refresh_period:
 			for i in self.listWidget.findItems(refresh_period, Qt.MatchFixedString):
-				print(i)
 				if i.text() == refresh_period:
 					self.listWidget.setCurrentItem(i)
 					break
@@ -451,7 +453,7 @@ class SystemTrayIcon(QSystemTrayIcon):
 	def show_action(self):
 		self.win.setWindowState(Qt.WindowNoState)
 		self.win.show()
-		self.win.setWindowState(Qt.WindowActive)
+		# self.win.setWindowState(Qt.WindowActive)
 		AppSettings.setParametr(self.win.sett, "window_state", 'shown');
 		return True
 
@@ -553,11 +555,19 @@ if __name__=="__main__":
 
 		full_url = domain_url + api_uri + api_result_get
 		rjson = GetKPI.get_auth_url(full_url, username, password)
-		cdict = json.loads(rjson)
+
+		try:
+			cdict = json.loads(rjson)
+		except:
+			raise ValueError('Сервер вернул пустой ответ')
 
 		full_url = domain_url + api_uri + api_employees_get
 		rjson = GetKPI.get_auth_url(full_url, username, password)
-		udict = json.loads(rjson)
+		
+		try:
+			udict = json.loads(rjson)
+		except:
+			raise ValueError('Сервер вернул пустой ответ')
 
 		data_list = []
 
@@ -625,7 +635,6 @@ if __name__=="__main__":
 
 		timer = QTimer()
 		timer.timeout.connect(lambda: win.action_reload())
-		print(refresh_period)
 		timer.start(refresh_period) # 60000 trigger every minute.
 		
 		app.exec_()
