@@ -171,9 +171,9 @@ class MyWindow(QWidget):
 
 		fileMenu = self.myQMenuBar.addMenu('Preferences')
 
-		set_id_Action = QAction('Изменить учетные данные', self)
+		set_id_Action = QAction('Настройки', self)
 		set_id_Action.setShortcut('alt+i')       
-		set_id_Action.triggered.connect(self.action_set_auth)
+		set_id_Action.triggered.connect(self.action_set_settings)
 		fileMenu.addAction(set_id_Action)
 
 		toggleVIPAction = QAction(QIcon(img_path+'vip.png'), 'VIP', self)
@@ -261,7 +261,6 @@ class MyWindow(QWidget):
 			if self.isMinimized():
 				# self.setWindowFlags(self.windowFlags() & ~Qt.Tool)
 				self.hide()
-				print('minimized')
 				self.sett.setParametr("window_state", 'minimized');
 		else:
 			return super(MyWindow, self).event(event)
@@ -294,12 +293,12 @@ class MyWindow(QWidget):
 		self.statusbar.showMessage('изменение видимости показателей групп')
 
 	def action_reload(self):
+		# TODO: reload model only - http://www.qtcentre.org/threads/31770-How-to-inform-a-Model-TableView-that-some-data-changed
 		subprocess.Popen([__file__])
 		sys.exit(0)
 
-	# action_set_auth
-	def action_set_auth(self):
-		saver = Login()
+	def action_set_settings(self):
+		saver = ChangeSettings()
 		if saver.exec_() == QDialog.Accepted:
 			self.statusbar.showMessage('Данные сохранены')
 			return True
@@ -307,23 +306,14 @@ class MyWindow(QWidget):
 			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
 
-	def action_set_id(self):
-		saver = SetID()
+	def action_set_settings_old(self):
+		saver = Login()
 		if saver.exec_() == QDialog.Accepted:
-			self.statusbar.showMessage('ID сохранен')
+			self.statusbar.showMessage('Данные сохранены')
 			return True
 		else:
-			self.statusbar.showMessage('Ошибка сохранения ID')
+			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
-
-	# Не используется
-	# Реализовано в классе SystemTrayIcon
-	def trayActivated(self, reason):
-		if reason == QSystemTrayIcon.DoubleClick:
-			self.setWindowState(Qt.WindowNoState)
-			self.show()
-		elif reason == QSystemTrayIcon.Trigger:
-			CommonTools.show_popup('всего баллов', str(self.kpi))
 
 class MyTableModel(QAbstractTableModel):
 	def __init__(self, parent, mylist, header, *args):
@@ -362,13 +352,62 @@ class MyTableModel(QAbstractTableModel):
 			key=operator.itemgetter(col))
 		if order == Qt.DescendingOrder:
 			self.mylist.reverse()
-		self.emit(SIGNAL("layoutChanged()"))        
+		self.emit(SIGNAL("layoutChanged()"))
+
+class ChangeSettings(QDialog):
+	def __init__(self, parent=None):
+		super(ChangeSettings, self).__init__(parent)
+		self.sett = AppSettings()
+
+		self.loginLabel = QLabel("Login: ")
+		self.textName = QLineEdit(self)
+		self.textName.setText(self.sett.getParametr("username"))
+
+		self.passwordLabel = QLabel("Password: ")
+		self.textPass = QLineEdit(self)
+		self.textPass.setText(self.sett.getParametr("password"))
+
+		self.periodLabel = QLabel("Период обновления: ")
+		self.listWidget = QListWidget()
+		for i in ('не обновлять','1','15','30','60'):
+			item = QListWidgetItem(i)
+			self.listWidget.addItem(item)
+		refresh_period = self.sett.getParametr("refresh_period")
+		if refresh_period:
+			for i in self.listWidget.findItems(refresh_period, Qt.MatchFixedString):
+				print(i)
+				if i.text() == refresh_period:
+					self.listWidget.setCurrentItem(i)
+					break
+
+		self.buttonSave = QPushButton('Сохранить', self)
+		self.buttonSave.clicked.connect(self.handleSubmit)
+
+		layout = QVBoxLayout(self)
+		layout.addWidget(self.loginLabel)
+		layout.addWidget(self.textName)
+		layout.addWidget(self.passwordLabel)
+		layout.addWidget(self.textPass)
+		layout.addWidget(self.periodLabel)
+		layout.addWidget(self.listWidget)
+		layout.addWidget(self.buttonSave)
+
+	def handleSubmit(self):
+		self.sett.setParametr("username", self.textName.text())
+		self.sett.setParametr("password", self.textPass.text())
+		if int(self.listWidget.selectedItems()[0].text()) > 0:
+			refresh_period = self.sett.setParametr("refresh_period", self.listWidget.selectedItems()[0].text())	
+		else:
+			refresh_period = self.sett.setParametr("refresh_period", '0')
+		self.accept()
 
 class Login(QDialog):
 	def __init__(self, parent=None):
 		super(Login, self).__init__(parent)
 		self.textName = QLineEdit(self)
+		self.textName.setText("login")
 		self.textPass = QLineEdit(self)
+		self.textPass.setText("password")
 		self.buttonLogin = QPushButton('Login', self)
 		self.buttonLogin.clicked.connect(self.handleLogin)
 		layout = QVBoxLayout(self)
@@ -418,8 +457,7 @@ class SystemTrayIcon(QSystemTrayIcon):
 
 	def trayActivated(self, reason):
 		if reason == QSystemTrayIcon.DoubleClick:
-			self.win.setWindowState(Qt.WindowNoState)
-			self.win.show()
+			self.show_action()
 		elif reason == QSystemTrayIcon.Trigger:
 			CommonTools.show_popup('всего баллов', str(self.kpi))    
 
@@ -561,17 +599,18 @@ if __name__=="__main__":
 		trayIcon = SystemTrayIcon(QIcon(img_path+"app.png"), win, icon_data)
 		trayIcon.setIcon(QIcon(trayIcon.create_icon(icon_data)))
 
-		# Реализовано в классе SystemTrayIcon
-		# win.kpi = icon_data
-		# trayIcon.activated.connect(win.trayActivated)
-
 		trayIcon.setToolTip(icon_data)
 		trayIcon.show()
 
 		win.setMinimumSize(800, 600)
 		win.resize(1024, 768)
+
 		last_geom = sett.getParametr("geometry")
 		window_state = sett.getParametr("window_state")
+		refresh_period = int(sett.getParametr("refresh_period"))*60000
+		if not refresh_period:
+			refresh_period = 1800000 # 30 min
+
 		if last_geom:
 			if type(last_geom) is not bytearray:
 				last_geom = bytearray()
@@ -586,7 +625,8 @@ if __name__=="__main__":
 
 		timer = QTimer()
 		timer.timeout.connect(lambda: win.action_reload())
-		timer.start(600000) # 60000 trigger every minute.
+		print(refresh_period)
+		timer.start(refresh_period) # 60000 trigger every minute.
 		
 		app.exec_()
 
