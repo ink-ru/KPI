@@ -19,8 +19,8 @@ from kpi_dicts import *
 import socket
 socket.setdefaulttimeout(10)
 
-# img_path = '/usr/share/pixmaps/kpi/'
-img_path = './img/'
+img_path = '/usr/share/pixmaps/kpi/'
+# img_path = './img/'
 # d = base64.b64encode(bytes(domain_url, "utf-8"))
 domain_url = base64.b64decode(domain_url).decode("utf-8", "ignore")
 
@@ -273,27 +273,29 @@ class MyWindow(QWidget):
 	
 	def toggle_vip(self):
 		# TODO store ranges in app settings
-		if self.table_view.isColumnHidden(9):
-			self.table_view.showColumn(9)
-			self.table_view.showColumn(21)
+		vip_range = (13,14,21,32,33)
+		if self.table_view.isColumnHidden(vip_range[0]):
+			for i in vip_range:
+				self.table_view.showColumn(i)
 			self.sett.setParametr("vip", 1)
 		else:
-			self.table_view.hideColumn(9)
-			self.table_view.hideColumn(21)
+			for i in vip_range:
+				self.table_view.hideColumn(i)
 			self.sett.setParametr("vip", 0)
 		self.statusbar.showMessage('изменение видимости VIP')
 
 	def toggle_group(self):
 		# TODO store ranges in app settings
-		if self.table_view.isColumnHidden(15):
-			for i in range(15,27):
+		group_range = (24,26,27,28,30,31,33,35,36,37,38,39,40)
+		if self.table_view.isColumnHidden(group_range[0]):
+			for i in group_range:
 				self.table_view.showColumn(i)
 			self.sett.setParametr("group", 1)
 		else:
-			for i in range(15,27):
+			for i in group_range:
 				self.table_view.hideColumn(i)
 			self.sett.setParametr("group", 0)
-		self.statusbar.showMessage('изменение видимости показателей групп')
+		self.statusbar.showMessage('изменение видимости показателей подразделений')
 
 	def action_reload(self):
 		# TODO: reload model only - http://www.qtcentre.org/threads/31770-How-to-inform-a-Model-TableView-that-some-data-changed
