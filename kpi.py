@@ -19,8 +19,8 @@ from kpi_dicts import *
 import socket
 socket.setdefaulttimeout(10)
 
-img_path = '/usr/share/pixmaps/kpi/'
-# img_path = './img/'
+# img_path = '/usr/share/pixmaps/kpi/'
+img_path = './img/'
 # d = base64.b64encode(bytes(domain_url, "utf-8"))
 domain_url = base64.b64decode(domain_url).decode("utf-8", "ignore")
 
