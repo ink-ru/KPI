@@ -11,4 +11,4 @@ Optional:
 python-qt4-dev
 pyqt4-dev-tools
 ```
-Debian package can be found in branch with the same name.
+Debian package can be found in branch with the same name. More information: https://github.com/ink-ru/KPI/blob/debian/opt/kpi/README.md
