@@ -79,6 +79,28 @@ class MyWindow(QWidget):
 		self.table_view.setModel(table_model)
 		self.sett = AppSettings()
 
+		self.name_vacation = 'vacation'
+		self.name_prediction = 'prediction'
+		self.name_vip = 'vip'
+		self.name_group = 'group'
+
+		prediction_list = []
+		vacation_list = []
+		vip_list = []
+		group_list = []
+		c = 0
+		for h in header:
+			if c != 0:
+				if re.search('Прогноз', h):
+					prediction_list.append(c)
+				if h.find('тсутстви') > 0:
+					vacation_list.append(c)
+				if re.search('\sVIP', h):
+					vip_list.append(c)
+				if re.search('подразделение', h, re.IGNORECASE):
+					group_list.append(c)
+			c = c + 1
+
 		# http://doc.qt.io/qt-5/stylesheet-examples.html
 		# http://doc.qt.io/qt-5/stylesheet-reference.html
 		style = '''border: none;'''
@@ -158,14 +180,14 @@ class MyWindow(QWidget):
 		self.myQMenuBar = QMenuBar(self)
 		fileMenu = self.myQMenuBar.addMenu('File')
 
-		exitAction = QAction(QIcon(img_path+'exit.png'), 'Exit', self)
+		exitAction = QAction(QIcon(img_path+'exit.png'), 'Закрыть', self)
 		exitAction.setShortcut('esc')      
 		exitAction.triggered.connect(qApp.quit)
 		fileMenu.addAction(exitAction)
 
 		# fileMenu.addSeparator()
 
-		restartAction = QAction(QIcon(img_path+'reload.png'), 'Reload', self)
+		restartAction = QAction(QIcon(img_path+'reload.png'), 'Обновить', self)
 		restartAction.setShortcut('f5')       
 		restartAction.triggered.connect(self.action_reload)
 		fileMenu.addAction(restartAction)
@@ -180,14 +202,26 @@ class MyWindow(QWidget):
 		toggleVIPAction = QAction(QIcon(img_path+'vip.png'), 'VIP', self)
 		toggleVIPAction.setShortcut('alt+v')
 		toggleVIPAction.setCheckable(True)
-		toggleVIPAction.setChecked(True)
-		toggleVIPAction.triggered.connect(self.toggle_vip)
+		# toggleVIPAction.setChecked(True)
+		toggleVIPAction.triggered.connect(lambda: self.toggle_colls([self.name_vip, 'VIP'], vip_list))
 
-		toggleGroupAction = QAction(QIcon(img_path+'group.png'), 'Group', self)
+		toggleGroupAction = QAction(QIcon(img_path+'group.png'), 'Показатели подразделений', self)
 		toggleGroupAction.setShortcut('alt+g')
 		toggleGroupAction.setCheckable(True)
-		toggleGroupAction.setChecked(True)
-		toggleGroupAction.triggered.connect(self.toggle_group)
+		# toggleGroupAction.setChecked(True)
+		toggleGroupAction.triggered.connect(lambda: self.toggle_colls([self.name_group, 'показатели подразделений'], group_list))
+
+		toggleVacationAction = QAction(QIcon(img_path+'vacation.png'), 'Отпуск и отсутствия', self)
+		toggleVacationAction.setShortcut('alt+w')
+		toggleVacationAction.setCheckable(True)
+		# toggleVacationAction.setChecked(True)
+		toggleVacationAction.triggered.connect(lambda: self.toggle_colls([self.name_vacation, 'отсутствия'], vacation_list))
+
+		togglePredictionAction = QAction(QIcon(img_path+'prediction.png'), 'Прогноз', self)
+		togglePredictionAction.setShortcut('alt+p')
+		togglePredictionAction.setCheckable(True)
+		# togglePredictionAction.setChecked(True)
+		togglePredictionAction.triggered.connect(lambda: self.toggle_colls([self.name_prediction, 'прогноз'], prediction_list))
 
 		# copyAction = QAction(self)
 		# copyAction.setShortcut('ctrl+ins')
@@ -199,8 +233,11 @@ class MyWindow(QWidget):
 		self.toolbar = QToolBar(self)
 		self.toolbar.addAction(exitAction)
 		self.toolbar.addAction(restartAction)
+		# self.toolbar.addSeparator()
 		self.toolbar.addAction(toggleVIPAction)
 		self.toolbar.addAction(toggleGroupAction)
+		self.toolbar.addAction(toggleVacationAction)
+		self.toolbar.addAction(togglePredictionAction)
 
 		self.setLayout(layout)
 		layout.addWidget(self.myQMenuBar)
@@ -208,13 +245,21 @@ class MyWindow(QWidget):
 		layout.addWidget(self.table_view)
 		layout.addWidget(self.statusbar)
 
-		if self.sett.getParametr("vip") == '0':
-			self.toggle_vip()
-			toggleVIPAction.setChecked(False)
+		if self.sett.getParametr(self.name_vip) == '1' or self.sett.getParametr(self.name_vip) == 1:
+			self.toggle_colls([self.name_vip, 'VIP'], vip_list, False)
+			toggleVIPAction.setChecked(True)
 
-		if self.sett.getParametr("group") == '0':
-			self.toggle_group()
-			toggleGroupAction.setChecked(False)
+		if self.sett.getParametr(self.name_group) == '1' or self.sett.getParametr(self.name_group) == 1:
+			self.toggle_colls([self.name_group, 'показатели подразделений'], group_list, False)
+			toggleGroupAction.setChecked(True)
+
+		if self.sett.getParametr(self.name_prediction) == '1' or self.sett.getParametr(self.name_prediction) == 1:
+			self.toggle_colls([self.name_prediction, 'прогноз'], prediction_list, False)
+			togglePredictionAction.setChecked(True)
+
+		if self.sett.getParametr(self.name_vacation) == '1' or self.sett.getParametr(self.name_vacation) == 1:
+			self.toggle_colls([self.name_vacation, 'отсутствия'], vacation_list, False)
+			toggleVacationAction.setChecked(True)
 
 	def keyPressEvent(self, e):
 		if (e.modifiers() & Qt.ControlModifier):
@@ -270,32 +315,22 @@ class MyWindow(QWidget):
 	def scrollTo(self, index, hint):
 		if index.column() > 1:
 			QTableView.scrollTo(self, index, hint)
-	
-	def toggle_vip(self):
-		# TODO store ranges in app settings
-		vip_range = (13,14,21,32,33)
-		if self.table_view.isColumnHidden(vip_range[0]):
-			for i in vip_range:
-				self.table_view.showColumn(i)
-			self.sett.setParametr("vip", 1)
-		else:
-			for i in vip_range:
-				self.table_view.hideColumn(i)
-			self.sett.setParametr("vip", 0)
-		self.statusbar.showMessage('изменение видимости VIP')
 
-	def toggle_group(self):
+	def toggle_colls(self, colls_type, cols_list, mode=True):
 		# TODO store ranges in app settings
-		group_range = (24,26,27,28,30,31,33,35,36,37,38,39,40)
-		if self.table_view.isColumnHidden(group_range[0]):
-			for i in group_range:
-				self.table_view.showColumn(i)
-			self.sett.setParametr("group", 1)
-		else:
-			for i in group_range:
-				self.table_view.hideColumn(i)
-			self.sett.setParametr("group", 0)
-		self.statusbar.showMessage('изменение видимости показателей подразделений')
+		if len(cols_list) > 0:
+			if self.sett.getParametr(colls_type[0]) == '1' or self.sett.getParametr(colls_type[0]) == 1:
+				for i in cols_list:
+					if mode: self.table_view.showColumn(i)
+					else: self.table_view.hideColumn(i)
+				if mode: self.sett.setParametr(colls_type[0], 0)
+			else:
+				for i in cols_list:
+					if mode: self.table_view.hideColumn(i)
+					else: self.table_view.showColumn(i)
+				if mode: self.sett.setParametr(colls_type[0], 1)
+			self.statusbar.showMessage('изменение видимости - '+colls_type[1])
+		return
 
 	def action_reload(self):
 		# TODO: reload model only - http://www.qtcentre.org/threads/31770-How-to-inform-a-Model-TableView-that-some-data-changed
@@ -306,16 +341,7 @@ class MyWindow(QWidget):
 		saver = ChangeSettings()
 		if saver.exec_() == QDialog.Accepted:
 			self.statusbar.showMessage('Данные сохранены')
-			return True
-		else:
-			self.statusbar.showMessage('Ошибка сохранения данных!')
-		return
-
-	def action_set_settings_old(self):
-		saver = Login()
-		if saver.exec_() == QDialog.Accepted:
-			self.statusbar.showMessage('Данные сохранены')
-			return True
+			self.action_reload()
 		else:
 			self.statusbar.showMessage('Ошибка сохранения данных!')
 		return
@@ -399,8 +425,9 @@ class ChangeSettings(QDialog):
 	def handleSubmit(self):
 		self.sett.setParametr("username", self.textName.text())
 		self.sett.setParametr("password", self.textPass.text())
-		if int(self.listWidget.selectedItems()[0].text()) > 0:
-			refresh_period = self.sett.setParametr("refresh_period", self.listWidget.selectedItems()[0].text())	
+		# if self.listWidget.selectedItems()[0].text().find('обновлять') < 1:
+		if len(self.listWidget.selectedItems()[0].text()) < 3:
+			refresh_period = self.sett.setParametr("refresh_period", self.listWidget.selectedItems()[0].text())
 		else:
 			refresh_period = self.sett.setParametr("refresh_period", '0')
 		self.accept()
@@ -619,9 +646,7 @@ if __name__=="__main__":
 
 		last_geom = sett.getParametr("geometry")
 		window_state = sett.getParametr("window_state")
-		refresh_period = int(sett.getParametr("refresh_period"))*60000
-		if not refresh_period:
-			refresh_period = 1800000 # 30 min
+		refresh_period = int(sett.getParametr("refresh_period"))
 
 		if last_geom:
 			if type(last_geom) is not bytearray:
@@ -635,9 +660,11 @@ if __name__=="__main__":
 		win.statusbar.showMessage('Ready')
 		CommonTools.show_popup(notify_name +' - всего баллов', icon_data)
 
-		timer = QTimer()
-		timer.timeout.connect(lambda: win.action_reload())
-		timer.start(refresh_period) # 60000 trigger every minute.
+		if refresh_period and refresh_period>0:
+			refresh_period = refresh_period*60000
+			timer = QTimer()
+			timer.timeout.connect(lambda: win.action_reload())
+			timer.start(refresh_period) # 60000 trigger every minute.
 		
 		app.exec_()
 
