@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 '''Производственный календарь'''
 
@@ -68,12 +67,18 @@ class pCal:
 	}
 
 	now = datetime.datetime.now()
+	cur_mnth = now.month
+	
+	if cur_mnth == 1:
+		lst_mnth = 12
+	else:
+		lst_mnth = now.month-1
 
 	def month_days(month_number='current'):
 		if month_number == 'current':
-			return calendar.monthrange(pCal.now.year, pCal.now.month-1)[1]
+			return calendar.monthrange(pCal.now.year, pCal.cur_mnth)[1]
 		elif month_number == 'previous':
-			return calendar.monthrange(pCal.now.year, pCal.now.month-2)[1]
+			return calendar.monthrange(pCal.now.year, pCal.lst_mnth)[1]
 		elif isinstance(month_number, int) and (int(month_number) > 0) and (int(month_number) < 13):
 			return calendar.monthrange(pCal.now.year, int(month_number))[1]
 		else:
@@ -81,9 +86,9 @@ class pCal:
 
 	def working_days(month_number='current'):
 		if month_number == 'current':
-			return str( pCal.month_days() - len(pCal.p_clndr[str(pCal.now.year)][pCal.now.month-1]) )
+			return str( pCal.month_days() - len(pCal.p_clndr[str(pCal.now.year)][pCal.cur_mnth-1]) )
 		elif month_number == 'previous':
-			return str( pCal.month_days(pCal.now.month-2) - len(pCal.p_clndr[str(pCal.now.year)][pCal.now.month-2]) )
+			return str( pCal.month_days(pCal.lst_mnth) - len(pCal.p_clndr[str(pCal.now.year)][pCal.lst_mnth-1]) )
 		elif isinstance(month_number, int) and (int(month_number) > 0) and (int(month_number) < 13):
 			return str( pCal.month_days(int(month_number)) - len(pCal.p_clndr[str(pCal.now.year)][int(month_number)]) )
 		else:
@@ -103,7 +108,7 @@ class pCal:
 		# if(pCal.now.hour < 14):
 		# 	to_day = to_day - 1
 
-		for d in pCal.p_clndr[str(pCal.now.year)][pCal.now.month-1]:
+		for d in pCal.p_clndr[str(pCal.now.year)][pCal.cur_mnth-1]:
 			if int(d) < to_day:
 				total_holidays = total_holidays + 1
 			else:
